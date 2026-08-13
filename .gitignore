@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+venv/
+env/
+.venv/
+*.log
+
+# Environment
+.env
+.env.local
+*.env.bak
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Project runtime data
+output/
+*.db
+*.sqlite3
+assets/music/*.mp3
+assets/generated/
+
+# Credentials / secrets
+*.pem
+*.key
+client_secret*.json
+token.json
