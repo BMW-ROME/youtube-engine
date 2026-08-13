@@ -32,8 +32,8 @@ a chat session again.
 
 ### Core Pipeline (core/)
 - [x] content_db.py — SQLite tracking, tested end-to-end (create/status transitions/metadata/shorts/retry) (2026-08-13)
-- [ ] script_writer.py — Stage 1: GPT-4o script generation (next up)
-- [ ] voice_gen.py — Stage 2: Edge-TTS / ElevenLabs
+- [x] script_writer.py — Stage 1: GPT-4o script generation, tested with fake client (success + failure/retry paths) (2026-08-13)
+- [ ] voice_gen.py — Stage 2: Edge-TTS / ElevenLabs (next up)
 - [ ] voice_clone.py — ElevenLabs voice cloning setup
 - [ ] music_mixer.py — Stage 3: FFmpeg background music
 - [ ] image_gen.py — Stage 4: DALL-E 3 with retry/fallback
@@ -84,11 +84,19 @@ a chat session again.
 
 - 2026-08-13: content_db.py written and smoke-tested in an isolated sandbox (fresh SQLite file,
   full lifecycle: create -> status transitions -> metadata patch -> shorts -> youtube info ->
-  failed/retry path). All operations confirmed working, not just syntax-checked. Schema covers
-  `videos` and `shorts` tables with indexes on channel/status/created_at for dashboard queries.
-  `update_metadata()` merges into a JSON blob rather than dedicated columns — keeps future
-  pipeline stages (script_writer, seo_optimizer, shorts_gen) from needing schema migrations
-  every time they add a new output field.
+  failed/retry path). All operations confirmed working, not just syntax-checked.
+
+- 2026-08-13: script_writer.py written and tested with fake ChatClient implementations (no real
+  OpenAI key/cost used). The OpenAI client is dependency-injected via a `ChatClient` Protocol,
+  so the module is fully testable offline. Confirmed:
+    - Success path: valid JSON -> parsed into Script -> validated (min 3 scenes, non-empty
+      hook/outro/narration/visual_description) -> persisted into content_db metadata -> status
+      correctly left at SCRIPTING (next pipeline stage advances it further, not this module).
+    - Failure path: invalid JSON output retried 2 extra times (3 total attempts), then raises
+      ScriptGenerationError, marks video FAILED with the error message, and increments retry_count
+      for the orchestrator's retry job to pick up later.
+  Retention Architecture (hook/open-loop/curiosity-gaps/payoff) is baked directly into the
+  system prompt per the original spec.
 
 ## Rebuild Rule
 
