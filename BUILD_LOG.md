@@ -34,8 +34,8 @@ a chat session again.
 - [x] content_db.py — SQLite tracking, tested end-to-end (create/status transitions/metadata/shorts/retry) (2026-08-13)
 - [x] script_writer.py — Stage 1: GPT-4o script generation, tested with fake client (success + failure/retry paths) (2026-08-13)
 - [x] voice_gen.py — Stage 2: Edge-TTS / ElevenLabs, tested with fake synthesizer + concatenator (2026-08-13)
-- [ ] voice_clone.py — ElevenLabs voice cloning setup (next up)
-- [ ] music_mixer.py — Stage 3: FFmpeg background music
+- [x] voice_clone.py — ElevenLabs voice cloning setup, tested with fake client (clone/exists/delete + 5 validation edge cases + failure path) (2026-08-13)
+- [ ] music_mixer.py — Stage 3: FFmpeg background music (next up)
 - [ ] image_gen.py — Stage 4: DALL-E 3 with retry/fallback
 - [ ] thumbnail_text.py — Stage 5: Pillow overlay
 - [ ] video_effects.py — Stage 6: 4 video modes
@@ -78,35 +78,31 @@ a chat session again.
 
 - 2026-08-13: settings.py and channels.py written. Added `pydantic-settings` to requirements.txt
   (was missing from the original spec's dependency list but required for BaseSettings).
-  channels.py pulls video_mode/videos_per_day from settings + os.getenv per-channel overrides,
-  matching the .env.template variable names exactly. YouTube category_id values are best-guess
-  placeholders — verify against actual YouTube category taxonomy before going live.
 
-- 2026-08-13: content_db.py written and smoke-tested in an isolated sandbox (fresh SQLite file,
-  full lifecycle: create -> status transitions -> metadata patch -> shorts -> youtube info ->
-  failed/retry path). All operations confirmed working, not just syntax-checked.
+- 2026-08-13: content_db.py written and smoke-tested in an isolated sandbox. All operations
+  confirmed working, not just syntax-checked.
 
-- 2026-08-13: script_writer.py written and tested with fake ChatClient implementations (no real
-  OpenAI key/cost used). Confirmed success path (parse, validate, persist) and failure/retry path
-  (3 attempts, FAILED status, retry_count increment). Retention Architecture baked into the
+- 2026-08-13: script_writer.py written and tested with fake ChatClient implementations.
+  Confirmed success path and failure/retry path. Retention Architecture baked into the
   system prompt per the original spec.
 
 - 2026-08-13: voice_gen.py written and tested with fake Synthesizer + AudioConcatenator
-  implementations (no real edge-tts network call, no ffmpeg binary, no ElevenLabs account
-  needed). Confirmed:
-    - Per-scene synthesis: one synth call per script scene, in order.
-    - Concatenation: segments joined into a single final audio file, persisted into
-      content_db metadata as `voice_path`.
-    - Failure/retry path: synthesis error retried 2 extra times (3 total), then raises
-      VoiceGenerationError, marks video FAILED, increments retry_count.
-    - Resilience fallback: a channel configured for `voice_engine="elevenlabs"` with no
-      API key/voice ID set correctly falls back to EdgeTTSSynthesizer with a warning log,
-      exactly matching the Resilience Architecture table in the original README (ElevenLabs
-      missing -> falls back to Edge-TTS, pipeline never breaks).
-  Real synthesis classes (EdgeTTSSynthesizer using the edge-tts library, ElevenLabsSynthesizer
-  using the elevenlabs client, FFmpegConcatenator using the ffmpeg concat demuxer) are included
-  and will be exercised for real once run_once.py / start_engine.py wire the pipeline together —
-  at that point ffmpeg + edge-tts need to actually be installed per the Prerequisites table.
+  implementations. Confirmed per-scene synthesis, concatenation, failure/retry path, and
+  the ElevenLabs -> Edge-TTS resilience fallback.
+
+- 2026-08-13: voice_clone.py written and tested with a fake VoiceCloneClient (no real
+  ElevenLabs account/network used). Covers the setup_voice.py wizard's core logic:
+    - validate_samples(): rejects empty lists, >25 files, unsupported extensions,
+      missing files, and zero-byte files, each with a specific VoiceCloneError message.
+    - clone_voice(): validates first, then uploads via the injected client, returns a
+      CloneResult(voice_id, name, sample_count). Does NOT write to .env itself — that's
+      left to scripts/setup_voice.py so this module has no file-IO side effects.
+    - voice_exists() / delete_voice(): for detecting/cleaning up stale ELEVENLABS_VOICE_ID
+      entries in .env.
+    - Failure path: upload exceptions are caught and re-raised as VoiceCloneError with
+      context, matching the error-handling pattern used in script_writer/voice_gen.
+  All 9 test cases passed: successful clone, exists (true/false), delete, 5 validation
+  edge cases, and the API-failure path.
 
 ## Rebuild Rule
 
