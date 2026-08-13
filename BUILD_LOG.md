@@ -33,8 +33,8 @@ a chat session again.
 ### Core Pipeline (core/)
 - [x] content_db.py — SQLite tracking, tested end-to-end (create/status transitions/metadata/shorts/retry) (2026-08-13)
 - [x] script_writer.py — Stage 1: GPT-4o script generation, tested with fake client (success + failure/retry paths) (2026-08-13)
-- [ ] voice_gen.py — Stage 2: Edge-TTS / ElevenLabs (next up)
-- [ ] voice_clone.py — ElevenLabs voice cloning setup
+- [x] voice_gen.py — Stage 2: Edge-TTS / ElevenLabs, tested with fake synthesizer + concatenator (2026-08-13)
+- [ ] voice_clone.py — ElevenLabs voice cloning setup (next up)
 - [ ] music_mixer.py — Stage 3: FFmpeg background music
 - [ ] image_gen.py — Stage 4: DALL-E 3 with retry/fallback
 - [ ] thumbnail_text.py — Stage 5: Pillow overlay
@@ -87,16 +87,26 @@ a chat session again.
   failed/retry path). All operations confirmed working, not just syntax-checked.
 
 - 2026-08-13: script_writer.py written and tested with fake ChatClient implementations (no real
-  OpenAI key/cost used). The OpenAI client is dependency-injected via a `ChatClient` Protocol,
-  so the module is fully testable offline. Confirmed:
-    - Success path: valid JSON -> parsed into Script -> validated (min 3 scenes, non-empty
-      hook/outro/narration/visual_description) -> persisted into content_db metadata -> status
-      correctly left at SCRIPTING (next pipeline stage advances it further, not this module).
-    - Failure path: invalid JSON output retried 2 extra times (3 total attempts), then raises
-      ScriptGenerationError, marks video FAILED with the error message, and increments retry_count
-      for the orchestrator's retry job to pick up later.
-  Retention Architecture (hook/open-loop/curiosity-gaps/payoff) is baked directly into the
+  OpenAI key/cost used). Confirmed success path (parse, validate, persist) and failure/retry path
+  (3 attempts, FAILED status, retry_count increment). Retention Architecture baked into the
   system prompt per the original spec.
+
+- 2026-08-13: voice_gen.py written and tested with fake Synthesizer + AudioConcatenator
+  implementations (no real edge-tts network call, no ffmpeg binary, no ElevenLabs account
+  needed). Confirmed:
+    - Per-scene synthesis: one synth call per script scene, in order.
+    - Concatenation: segments joined into a single final audio file, persisted into
+      content_db metadata as `voice_path`.
+    - Failure/retry path: synthesis error retried 2 extra times (3 total), then raises
+      VoiceGenerationError, marks video FAILED, increments retry_count.
+    - Resilience fallback: a channel configured for `voice_engine="elevenlabs"` with no
+      API key/voice ID set correctly falls back to EdgeTTSSynthesizer with a warning log,
+      exactly matching the Resilience Architecture table in the original README (ElevenLabs
+      missing -> falls back to Edge-TTS, pipeline never breaks).
+  Real synthesis classes (EdgeTTSSynthesizer using the edge-tts library, ElevenLabsSynthesizer
+  using the elevenlabs client, FFmpegConcatenator using the ffmpeg concat demuxer) are included
+  and will be exercised for real once run_once.py / start_engine.py wire the pipeline together —
+  at that point ffmpeg + edge-tts need to actually be installed per the Prerequisites table.
 
 ## Rebuild Rule
 
