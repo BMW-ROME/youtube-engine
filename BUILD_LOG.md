@@ -17,8 +17,8 @@ a chat session again.
 ### Foundation
 - [x] README.md recovered and pushed (2026-08-12)
 - [x] .gitignore, requirements.txt, .env.template scaffolded (2026-08-12)
-- [ ] config/settings.py — global Pydantic settings
-- [ ] config/channels.py — 7 channel definitions
+- [x] config/settings.py — global Pydantic settings, singleton `settings` object (2026-08-13)
+- [x] config/channels.py — 7 channel definitions, ChannelConfig dataclass, CHANNELS registry (2026-08-13)
 
 ### Prompts (config/prompts/)
 - [ ] finance.py
@@ -31,7 +31,7 @@ a chat session again.
 - [ ] freestyle.py
 
 ### Core Pipeline (core/)
-- [ ] content_db.py — SQLite tracking (build early, everything else depends on it)
+- [ ] content_db.py — SQLite tracking (build next, everything else depends on it)
 - [ ] script_writer.py — Stage 1: GPT-4o script generation
 - [ ] voice_gen.py — Stage 2: Edge-TTS / ElevenLabs
 - [ ] voice_clone.py — ElevenLabs voice cloning setup
@@ -73,6 +73,14 @@ a chat session again.
 - [ ] Dockerfile
 - [ ] docker-compose.yml
 - [ ] start_engine.bat
+
+## Notes
+
+- 2026-08-13: settings.py and channels.py written. Added `pydantic-settings` to requirements.txt
+  (was missing from the original spec's dependency list but required for BaseSettings).
+  channels.py pulls video_mode/videos_per_day from settings + os.getenv per-channel overrides,
+  matching the .env.template variable names exactly. YouTube category_id values are best-guess
+  placeholders — verify against actual YouTube category taxonomy before going live.
 
 ## Rebuild Rule
 
