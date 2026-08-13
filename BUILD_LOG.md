@@ -31,8 +31,8 @@ a chat session again.
 - [ ] freestyle.py
 
 ### Core Pipeline (core/)
-- [ ] content_db.py — SQLite tracking (build next, everything else depends on it)
-- [ ] script_writer.py — Stage 1: GPT-4o script generation
+- [x] content_db.py — SQLite tracking, tested end-to-end (create/status transitions/metadata/shorts/retry) (2026-08-13)
+- [ ] script_writer.py — Stage 1: GPT-4o script generation (next up)
 - [ ] voice_gen.py — Stage 2: Edge-TTS / ElevenLabs
 - [ ] voice_clone.py — ElevenLabs voice cloning setup
 - [ ] music_mixer.py — Stage 3: FFmpeg background music
@@ -81,6 +81,14 @@ a chat session again.
   channels.py pulls video_mode/videos_per_day from settings + os.getenv per-channel overrides,
   matching the .env.template variable names exactly. YouTube category_id values are best-guess
   placeholders — verify against actual YouTube category taxonomy before going live.
+
+- 2026-08-13: content_db.py written and smoke-tested in an isolated sandbox (fresh SQLite file,
+  full lifecycle: create -> status transitions -> metadata patch -> shorts -> youtube info ->
+  failed/retry path). All operations confirmed working, not just syntax-checked. Schema covers
+  `videos` and `shorts` tables with indexes on channel/status/created_at for dashboard queries.
+  `update_metadata()` merges into a JSON blob rather than dedicated columns — keeps future
+  pipeline stages (script_writer, seo_optimizer, shorts_gen) from needing schema migrations
+  every time they add a new output field.
 
 ## Rebuild Rule
 
