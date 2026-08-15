@@ -155,3 +155,10 @@ All 10 stages of the pipeline now have code committed to `core/`. Next: build `o
 - [x] `core/orchestrator.py` — Scheduler layer on top of `core/pipeline.py`. Supports `run_once()` for single manual runs and `run_forever()` for a recurring loop (default interval configurable via `PIPELINE_INTERVAL_SECONDS` env var). Pulls next topic from `core.content_db` when available, falling back to a static topic rotation if the DB is unavailable so the scheduler never stalls. Persists a JSON-lines run history (`run_history.jsonl`) after every run for later review. Orchestrator-level try/except wraps every run in addition to pipeline.py's own per-stage resilience, so one bad run never kills the scheduler process. Committed to main.
 
 Next: dashboard/monitoring view for run history + failed stages, and end-to-end testing of the full chain (script -> upload).
+
+
+## Stage 12: Monitoring Dashboard (completed)
+
+- [x] `dashboard/app.py` — Lightweight Flask app that reads the JSON-lines run history produced by `core/orchestrator.py` (`run_history.jsonl`) and renders a dark-themed table of recent runs plus summary cards (total/success/failure counts). Missing history file or malformed lines are handled gracefully (empty state / line skipped + logged) rather than crashing. Run locally with `python dashboard/app.py` on port 5000 (configurable via `DASHBOARD_PORT`). Committed to main.
+
+Next: end-to-end integration test of the full chain (script -> voice -> ... -> upload) using stubbed/mock external APIs, then wire up scheduled execution (cron / systemd timer / Docker) for the orchestrator in production.
