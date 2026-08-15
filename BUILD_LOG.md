@@ -27,7 +27,11 @@ the previous phase's output actually works before adding the next layer on top o
   script_writer -> voice_gen for one channel/topic. Supports --dry-run (fake clients, zero API
   cost) and real-client mode. Stops after voice generation (status=MUSIC) since music_mixer.py
   doesn't exist yet.
-- [ ] Phase 2: Visuals — core/music_mixer.py, core/image_gen.py
+- [x] Phase 2: Visuals — core/music_mixer.py, core/image_gen.py, both tested with fake clients
+  (2026-08-15). Music mixer confirmed: mix success, BACKGROUND_MUSIC disabled skip, and
+  mixer-always-fails graceful fallback to voice-only audio. Image gen confirmed: all-succeed
+  path, content-filter-rejection-then-sanitize-recovery path, and always-fails-falls-back-to-
+  gradient-placeholder path.
 - [ ] Phase 3: Assembly — core/thumbnail_text.py, core/video_effects.py, core/video_assembler.py, core/chapters.py
 - [ ] Phase 4: Metadata & Distribution — core/seo_optimizer.py, core/shorts_gen.py, core/uploader.py, core/pipedream_uploader.py
 - [ ] Phase 5: Orchestration — core/pipeline.py, core/freestyle.py, core/orchestrator.py, core/trend_engine.py, remaining config/prompts/*.py (if still wanted), channels/*.py
@@ -51,9 +55,9 @@ the previous phase's output actually works before adding the next layer on top o
 - [x] script_writer.py — Stage 1: GPT-4o script generation, tested with fake client (success + failure/retry paths) (2026-08-13)
 - [x] voice_gen.py — Stage 2: Edge-TTS / ElevenLabs, tested with fake synthesizer + concatenator (2026-08-13)
 - [x] voice_clone.py — ElevenLabs voice cloning setup, tested with fake client (9 test cases) (2026-08-13)
-- [ ] music_mixer.py — Stage 3: FFmpeg background music (next up — Phase 2)
-- [ ] image_gen.py — Stage 4: DALL-E 3 with retry/fallback (Phase 2)
-- [ ] thumbnail_text.py — Stage 5: Pillow overlay (Phase 3)
+- [x] music_mixer.py — Stage 3: FFmpeg background music, tested with fake mixer (mix/skip/fallback paths) (2026-08-15)
+- [x] image_gen.py — Stage 4: DALL-E 3 with retry/fallback, tested with fake client (success/sanitize-recovery/placeholder-fallback paths) (2026-08-15)
+- [ ] thumbnail_text.py — Stage 5: Pillow overlay (next up — Phase 3)
 - [ ] video_effects.py — Stage 6: 4 video modes (Phase 3)
 - [ ] video_assembler.py — Stage 7: FFmpeg assembly (Phase 3)
 - [ ] chapters.py — Stage 7b (Phase 3)
@@ -121,6 +125,19 @@ the previous phase's output actually works before adding the next layer on top o
   reason. scripts/run_once.py written to prove content_db -> script_writer -> voice_gen work
   together end-to-end (supports --dry-run for zero-cost testing). This is the first script that
   actually chains multiple pipeline stages together rather than testing one module in isolation.
+
+- 2026-08-15: Phase 2 (Visuals) complete. music_mixer.py mixes background music under narration
+  via ffmpeg's amix filter at low volume (0.12), with a niche-to-music-folder mapping covering
+  all 7 channels. Gracefully skips if BACKGROUND_MUSIC is off or no track exists for the niche,
+  and gracefully degrades to voice-only audio if ffmpeg mixing fails after retries — music is an
+  enhancement, never a pipeline blocker. image_gen.py generates one DALL-E 3 image per scene
+  using channel.image_style_prefix for visual consistency, with the exact resilience chain from
+  the README: sanitize regex strips common filter-trigger words -> safety suffix appended on the
+  final attempt -> gradient PNG placeholder (via Pillow, with a stub fallback if Pillow isn't
+  installed) if all 3 attempts are exhausted. Both modules were tested in a standalone sandbox
+  with fake ChannelConfig/content_db/script_writer stubs (not the real config/core packages) to
+  verify logic without a full repo checkout — recommend a quick real-import smoke test against
+  the actual repo before Phase 3 to catch any signature drift.
 
 ## Rebuild Rule
 
