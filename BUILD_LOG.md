@@ -148,3 +148,10 @@ A broken-but-committed module beats a perfect-but-lost one.
 - [x] `core/pipeline.py` — Master orchestrator chaining all 10 stages (script, voice, music, images, thumbnail, effects, assembly, seo, shorts, upload). Each stage wrapped in try/except; failures are logged and stored in `PipelineResult.failed_stages` instead of crashing the run. `script` and `assembly` are REQUIRED stages — their failure aborts the pipeline; all others degrade gracefully and are skipped. Lazy imports per stage so a broken/missing module doesn't block the rest of the pipeline from loading. Committed to main.
 
 All 10 stages of the pipeline now have code committed to `core/`. Next: build `orchestrator.py`/scheduler layer for automated recurring runs, plus dashboard/monitoring and end-to-end testing.
+
+
+## Stage 11: Scheduler / Orchestrator (completed)
+
+- [x] `core/orchestrator.py` — Scheduler layer on top of `core/pipeline.py`. Supports `run_once()` for single manual runs and `run_forever()` for a recurring loop (default interval configurable via `PIPELINE_INTERVAL_SECONDS` env var). Pulls next topic from `core.content_db` when available, falling back to a static topic rotation if the DB is unavailable so the scheduler never stalls. Persists a JSON-lines run history (`run_history.jsonl`) after every run for later review. Orchestrator-level try/except wraps every run in addition to pipeline.py's own per-stage resilience, so one bad run never kills the scheduler process. Committed to main.
+
+Next: dashboard/monitoring view for run history + failed stages, and end-to-end testing of the full chain (script -> upload).
