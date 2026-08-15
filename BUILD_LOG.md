@@ -12,6 +12,27 @@ a chat session again.
 - [~] In progress
 - [x] Working, committed
 
+## Phased Rebuild Plan (added 2026-08-14)
+
+Coaching note: the original checklist below lists modules in pipeline order (Stage 1 -> 10),
+but that's documentation order, not build order. We build in phases instead, each one proving
+the previous phase's output actually works before adding the next layer on top of it.
+
+- [x] Phase 0: Unblock the Pipeline — SKIPPED. Audit on 2026-08-14 confirmed script_writer.py
+  does NOT import config/prompts/ at all — the Retention Architecture system prompt is baked
+  directly into the module, and channel context comes from ChannelConfig (niche, display_name,
+  image_style_prefix, affiliate_placeholder). The config/prompts/ directory is dead spec, not
+  a real blocker. Phase 1 was already unblocked.
+- [x] Phase 1: Prove the Loop — scripts/run_once.py written (2026-08-14). Chains content_db ->
+  script_writer -> voice_gen for one channel/topic. Supports --dry-run (fake clients, zero API
+  cost) and real-client mode. Stops after voice generation (status=MUSIC) since music_mixer.py
+  doesn't exist yet.
+- [ ] Phase 2: Visuals — core/music_mixer.py, core/image_gen.py
+- [ ] Phase 3: Assembly — core/thumbnail_text.py, core/video_effects.py, core/video_assembler.py, core/chapters.py
+- [ ] Phase 4: Metadata & Distribution — core/seo_optimizer.py, core/shorts_gen.py, core/uploader.py, core/pipedream_uploader.py
+- [ ] Phase 5: Orchestration — core/pipeline.py, core/freestyle.py, core/orchestrator.py, core/trend_engine.py, remaining config/prompts/*.py (if still wanted), channels/*.py
+- [ ] Phase 6: Visibility & Ops — dashboard/, scripts/*, Dockerfile, docker-compose.yml, start_engine.bat
+
 ## Rebuild Checklist
 
 ### Foundation
@@ -21,88 +42,85 @@ a chat session again.
 - [x] config/channels.py — 7 channel definitions, ChannelConfig dataclass, CHANNELS registry (2026-08-13)
 
 ### Prompts (config/prompts/)
-- [ ] finance.py
-- [ ] mmo.py
-- [ ] tech.py
-- [ ] trending.py
-- [ ] thee3lite.py
-- [ ] legal.py
-- [ ] stories.py
-- [ ] freestyle.py
+- [x] N/A — not needed. script_writer.py's RETENTION_SYSTEM_PROMPT + ChannelConfig fields
+  cover this entirely. Revisit only if per-channel prompt customization beyond
+  niche/display_name/image_style_prefix/affiliate_placeholder is needed later.
 
 ### Core Pipeline (core/)
 - [x] content_db.py — SQLite tracking, tested end-to-end (create/status transitions/metadata/shorts/retry) (2026-08-13)
 - [x] script_writer.py — Stage 1: GPT-4o script generation, tested with fake client (success + failure/retry paths) (2026-08-13)
 - [x] voice_gen.py — Stage 2: Edge-TTS / ElevenLabs, tested with fake synthesizer + concatenator (2026-08-13)
-- [x] voice_clone.py — ElevenLabs voice cloning setup, tested with fake client (clone/exists/delete + 5 validation edge cases + failure path) (2026-08-13)
-- [ ] music_mixer.py — Stage 3: FFmpeg background music (next up)
-- [ ] image_gen.py — Stage 4: DALL-E 3 with retry/fallback
-- [ ] thumbnail_text.py — Stage 5: Pillow overlay
-- [ ] video_effects.py — Stage 6: 4 video modes
-- [ ] video_assembler.py — Stage 7: FFmpeg assembly
-- [ ] chapters.py — Stage 7b
-- [ ] shorts_gen.py — Stage 9
-- [ ] seo_optimizer.py — Stage 8
-- [ ] uploader.py — Stage 10 (YouTube API)
-- [ ] pipedream_uploader.py — Stage 10 (webhook/local)
-- [ ] trend_engine.py — RSS + trending discovery
-- [ ] pipeline.py — orchestrates all 10 stages
-- [ ] freestyle.py — dynamic channel builder
-- [ ] orchestrator.py — APScheduler + health checks
+- [x] voice_clone.py — ElevenLabs voice cloning setup, tested with fake client (9 test cases) (2026-08-13)
+- [ ] music_mixer.py — Stage 3: FFmpeg background music (next up — Phase 2)
+- [ ] image_gen.py — Stage 4: DALL-E 3 with retry/fallback (Phase 2)
+- [ ] thumbnail_text.py — Stage 5: Pillow overlay (Phase 3)
+- [ ] video_effects.py — Stage 6: 4 video modes (Phase 3)
+- [ ] video_assembler.py — Stage 7: FFmpeg assembly (Phase 3)
+- [ ] chapters.py — Stage 7b (Phase 3)
+- [ ] shorts_gen.py — Stage 9 (Phase 4)
+- [ ] seo_optimizer.py — Stage 8 (Phase 4)
+- [ ] uploader.py — Stage 10 (YouTube API) (Phase 4)
+- [ ] pipedream_uploader.py — Stage 10 (webhook/local) (Phase 4)
+- [ ] trend_engine.py — RSS + trending discovery (Phase 5)
+- [ ] pipeline.py — orchestrates all 10 stages (Phase 5)
+- [ ] freestyle.py — dynamic channel builder (Phase 5)
+- [ ] orchestrator.py — APScheduler + health checks (Phase 5)
 
 ### Channels (channels/)
-- [ ] base_channel.py
-- [ ] finance_channel.py
-- [ ] mmo_channel.py
-- [ ] tech_channel.py
+- [ ] base_channel.py (Phase 5)
+- [ ] finance_channel.py (Phase 5)
+- [ ] mmo_channel.py (Phase 5)
+- [ ] tech_channel.py (Phase 5)
 
 ### Dashboard (dashboard/)
-- [ ] app.py — FastAPI
-- [ ] templates/index.html
-- [ ] static/style.css
+- [ ] app.py — FastAPI (Phase 6)
+- [ ] templates/index.html (Phase 6)
+- [ ] static/style.css (Phase 6)
 
 ### Scripts (scripts/)
-- [ ] start_engine.py — main CLI
-- [ ] setup.py — first-time wizard
-- [ ] setup_voice.py — ElevenLabs wizard
-- [ ] run_once.py
-- [ ] upload_ready.py
-- [ ] quick_upload.py
+- [x] run_once.py — manual single-video tool, Phase 1 script+voice loop (2026-08-14)
+- [ ] start_engine.py — main CLI (Phase 6)
+- [ ] setup.py — first-time wizard (Phase 6)
+- [ ] setup_voice.py — ElevenLabs wizard (Phase 6)
+- [ ] upload_ready.py (Phase 6)
+- [ ] quick_upload.py (Phase 6)
 
 ### Infra
-- [ ] Dockerfile
-- [ ] docker-compose.yml
-- [ ] start_engine.bat
+- [ ] Dockerfile (Phase 6)
+- [ ] docker-compose.yml (Phase 6)
+- [ ] start_engine.bat (Phase 6)
 
 ## Notes
 
 - 2026-08-13: settings.py and channels.py written. Added `pydantic-settings` to requirements.txt
   (was missing from the original spec's dependency list but required for BaseSettings).
+  channels.py pulls video_mode/videos_per_day from settings + os.getenv per-channel overrides,
+  matching the .env.template variable names exactly. YouTube category_id values are best-guess
+  placeholders — verify against actual YouTube category taxonomy before going live.
 
-- 2026-08-13: content_db.py written and smoke-tested in an isolated sandbox. All operations
-  confirmed working, not just syntax-checked.
+- 2026-08-13: content_db.py written and smoke-tested in an isolated sandbox (fresh SQLite file,
+  full lifecycle: create -> status transitions -> metadata patch -> shorts -> youtube info ->
+  failed/retry path). All operations confirmed working, not just syntax-checked.
 
-- 2026-08-13: script_writer.py written and tested with fake ChatClient implementations.
-  Confirmed success path and failure/retry path. Retention Architecture baked into the
+- 2026-08-13: script_writer.py written and tested with fake ChatClient implementations (no real
+  OpenAI key/cost used). Confirmed success path (parse, validate, persist) and failure/retry path
+  (3 attempts, FAILED status, retry_count increment). Retention Architecture baked into the
   system prompt per the original spec.
 
 - 2026-08-13: voice_gen.py written and tested with fake Synthesizer + AudioConcatenator
-  implementations. Confirmed per-scene synthesis, concatenation, failure/retry path, and
-  the ElevenLabs -> Edge-TTS resilience fallback.
+  implementations (no real edge-tts network call, no ffmpeg binary, no ElevenLabs account
+  needed). Confirmed per-scene synthesis, concatenation, failure/retry path, and the
+  ElevenLabs-configured-but-unavailable -> Edge-TTS fallback rule.
 
-- 2026-08-13: voice_clone.py written and tested with a fake VoiceCloneClient (no real
-  ElevenLabs account/network used). Covers the setup_voice.py wizard's core logic:
-    - validate_samples(): rejects empty lists, >25 files, unsupported extensions,
-      missing files, and zero-byte files, each with a specific VoiceCloneError message.
-    - clone_voice(): validates first, then uploads via the injected client, returns a
-      CloneResult(voice_id, name, sample_count). Does NOT write to .env itself — that's
-      left to scripts/setup_voice.py so this module has no file-IO side effects.
-    - voice_exists() / delete_voice(): for detecting/cleaning up stale ELEVENLABS_VOICE_ID
-      entries in .env.
-    - Failure path: upload exceptions are caught and re-raised as VoiceCloneError with
-      context, matching the error-handling pattern used in script_writer/voice_gen.
-  All 9 test cases passed: successful clone, exists (true/false), delete, 5 validation
-  edge cases, and the API-failure path.
+- 2026-08-13: voice_clone.py written, ElevenLabs voice cloning setup tested with a fake client
+  across 9 test cases.
+
+- 2026-08-14: Coaching audit — built a phased execution plan (Phase 0-6) instead of working
+  straight down the checklist. Phase 0 audit found config/prompts/ is not actually imported by
+  script_writer.py, so that entire checklist section was marked N/A rather than built for no
+  reason. scripts/run_once.py written to prove content_db -> script_writer -> voice_gen work
+  together end-to-end (supports --dry-run for zero-cost testing). This is the first script that
+  actually chains multiple pipeline stages together rather than testing one module in isolation.
 
 ## Rebuild Rule
 
