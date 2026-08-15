@@ -31,8 +31,7 @@ the previous phase's output actually works before adding the next layer on top o
   (2026-08-15). Music mixer confirmed: mix success, BACKGROUND_MUSIC disabled skip, and
   mixer-always-fails graceful fallback to voice-only audio. Image gen confirmed: all-succeed
   path, content-filter-rejection-then-sanitize-recovery path, and always-fails-falls-back-to-
-  gradient-placeholder path.
-- [~] Phase 3: Assembly — core/thumbnail_text.py DONE (2026-08-15, Stage 5) and core/video_effects.py DONE (2026-08-15, Stage 6: kenburns/sketch/animated/ai_video, Replicate fallback tested). Remaining: core/video_assembler.py, core/chapters.py
+  - [x] Phase 3: Assembly — core/thumbnail_text.py (Stage 5), core/video_effects.py (Stage 6, Replicate fallback tested), and core/video_assembler.py (Stage 7: FFmpeg crossfade assembly + build_chapter_markers() helper) all DONE and committed 2026-08-15.
 - [ ] Phase 4: Metadata & Distribution — core/seo_optimizer.py, core/shorts_gen.py, core/uploader.py, core/pipedream_uploader.py
 - [ ] Phase 5: Orchestration — core/pipeline.py, core/freestyle.py, core/orchestrator.py, core/trend_engine.py, remaining config/prompts/*.py (if still wanted), channels/*.py
 - [ ] Phase 6: Visibility & Ops — dashboard/, scripts/*, Dockerfile, docker-compose.yml, start_engine.bat
