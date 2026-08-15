@@ -141,3 +141,10 @@ the previous phase's output actually works before adding the next layer on top o
 
 Every session: commit and push working code before closing, even if incomplete.
 A broken-but-committed module beats a perfect-but-lost one.
+
+
+## Stage 10: Pipeline Orchestration (completed)
+
+- [x] `core/pipeline.py` — Master orchestrator chaining all 10 stages (script, voice, music, images, thumbnail, effects, assembly, seo, shorts, upload). Each stage wrapped in try/except; failures are logged and stored in `PipelineResult.failed_stages` instead of crashing the run. `script` and `assembly` are REQUIRED stages — their failure aborts the pipeline; all others degrade gracefully and are skipped. Lazy imports per stage so a broken/missing module doesn't block the rest of the pipeline from loading. Committed to main.
+
+All 10 stages of the pipeline now have code committed to `core/`. Next: build `orchestrator.py`/scheduler layer for automated recurring runs, plus dashboard/monitoring and end-to-end testing.
