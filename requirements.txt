@@ -1,6 +1,6 @@
 openai>=1.40.0
 edge-tts>=6.1.0
-elevenlabs>=1.0.0
+chatterbox-tts
 pillow>=10.0.0
 apscheduler>=3.10.0
 fastapi>=0.110.0
@@ -17,3 +17,5 @@ feedparser>=6.0.0
 # google-auth-oauthlib
 # google-api-python-client
 # replicate
+# torch  # required by chatterbox-tts; install per your GPU/CPU setup, see
+         # https://pytorch.org/get-started/locally/ for the correct build

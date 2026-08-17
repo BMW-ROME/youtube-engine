@@ -1,160 +1,128 @@
 """
-ElevenLabs voice cloning setup wizard.
+Local voice reference setup for Chatterbox TTS (zero-shot voice cloning).
 
-Used to create/refresh an Instant Voice Clone for the Thee3lite Speaks
-channel (or any channel switched to voice_engine="elevenlabs"). Accepts
-1-25 audio samples, uploads them to ElevenLabs, and returns the resulting
-voice_id so it can be saved into .env as ELEVENLABS_VOICE_ID.
+MIGRATION (2026-08-17): replaces the ElevenLabs Instant Voice Clone wizard.
+Chatterbox does NOT have a remote "upload samples, get a voice_id back"
+step like ElevenLabs did -- it clones a voice directly from a single
+reference audio clip passed as `audio_prompt_path` at generation time
+(see core/voice_gen.py's ChatterboxSynthesizer). So "cloning" here means:
 
-This module never writes to .env directly - it returns the voice_id and
-leaves persistence to the caller (scripts/setup_voice.py), keeping the
-cloning logic itself free of file-IO side effects and easy to test.
+    1. Validate the reference clip (exists, correct format, right length).
+    2. Resolve which file path to use for a given channel (explicit
+       channel override, else the global default reference clip).
 
-The ElevenLabs client is injected via a Protocol, matching the pattern in
-script_writer.py and voice_gen.py, so cloning can be tested without a real
-ElevenLabs account or network access.
+There is no voice_id to persist to .env anymore -- the reference clip's
+file path IS the "voice," and it's expected to live on local disk
+(committed to the assets/ directory or referenced via .env, never
+committed to git if it's a real personal voice sample).
+
+This module never writes to .env or the filesystem itself (other than
+reading) -- it has no file-IO side effects beyond validation, matching the
+pattern from the original ElevenLabs version.
 """
 
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol
 
+from config.channels import ChannelConfig
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
-MIN_SAMPLES = 1
-MAX_SAMPLES = 25
-ALLOWED_EXTENSIONS = {".mp3", ".wav", ".m4a", ".flac", ".ogg"}
+# Chatterbox's own docs recommend keeping reference clips short and clean --
+# roughly 5-40 seconds of clear, single-speaker audio with minimal
+# background noise. These are soft guardrails, not hard model limits.
+MIN_CLIP_SECONDS = 3.0
+RECOMMENDED_MAX_CLIP_SECONDS = 40.0
+ALLOWED_EXTENSIONS = {".wav", ".mp3", ".flac", ".m4a", ".ogg"}
 
 
 class VoiceCloneError(Exception):
-    """Raised when sample validation or the clone upload fails."""
+    """Raised when the reference clip is missing, invalid, or unusable."""
 
 
-class VoiceCloneClient(Protocol):
-    """Minimal interface for what we need from an ElevenLabs-compatible client."""
-
-    def clone_voice(self, name: str, description: str, file_paths: list[Path]) -> str:
-        """Uploads samples and returns the new voice_id."""
-        ...
-
-    def delete_voice(self, voice_id: str) -> None:
-        ...
-
-    def list_voices(self) -> list[dict]:
-        ...
-
-
-class ElevenLabsCloneClient:
-    """Thin wrapper around the real ElevenLabs SDK. Constructed lazily so
-    importing this module never requires the elevenlabs package or an API key."""
-
-    def __init__(self, api_key: str | None = None):
-        self._api_key = api_key or settings.elevenlabs_api_key
-        self._client = None
-
-    def _get_client(self):
-        if self._client is None:
-            from elevenlabs.client import ElevenLabs
-            self._client = ElevenLabs(api_key=self._api_key)
-        return self._client
-
-    def clone_voice(self, name: str, description: str, file_paths: list[Path]) -> str:
-        client = self._get_client()
-        files = [open(p, "rb") for p in file_paths]
-        try:
-            voice = client.voices.ivc.create(
-                name=name,
-                description=description,
-                files=files,
-            )
-            return voice.voice_id
-        finally:
-            for f in files:
-                f.close()
-
-    def delete_voice(self, voice_id: str) -> None:
-        client = self._get_client()
-        client.voices.delete(voice_id)
-
-    def list_voices(self) -> list[dict]:
-        client = self._get_client()
-        return [v.__dict__ for v in client.voices.get_all().voices]
-
-
-@dataclass
-class CloneResult:
-    voice_id: str
-    name: str
-    sample_count: int
-
-
-def validate_samples(file_paths: list[Path]) -> None:
-    """Raises VoiceCloneError if the sample set doesn't meet ElevenLabs'
-    requirements (1-25 files, valid audio extensions, files must exist)."""
-    if not file_paths:
-        raise VoiceCloneError("At least 1 audio sample is required")
-    if len(file_paths) > MAX_SAMPLES:
-        raise VoiceCloneError(
-            f"Too many samples: got {len(file_paths)}, max is {MAX_SAMPLES}"
-        )
-    for p in file_paths:
-        if not p.exists():
-            raise VoiceCloneError(f"Sample file not found: {p}")
-        if p.suffix.lower() not in ALLOWED_EXTENSIONS:
-            raise VoiceCloneError(
-                f"Unsupported audio format '{p.suffix}' for {p.name}. "
-                f"Allowed: {sorted(ALLOWED_EXTENSIONS)}"
-            )
-        if p.stat().st_size == 0:
-            raise VoiceCloneError(f"Sample file is empty: {p}")
-
-
-def clone_voice(
-    name: str,
-    file_paths: list[Path],
-    description: str = "",
-    client: VoiceCloneClient | None = None,
-) -> CloneResult:
-    """Validate samples and create a new ElevenLabs Instant Voice Clone.
-    Returns the voice_id - caller is responsible for saving it (e.g. to
-    .env as ELEVENLABS_VOICE_ID)."""
-    validate_samples(file_paths)
-
-    active_client = client or ElevenLabsCloneClient()
-
+def _get_audio_duration_seconds(path: Path) -> float | None:
+    """Best-effort duration probe via torchaudio, if available. Returns
+    None (rather than raising) if torchaudio isn't installed or the file
+    can't be read -- duration is a soft-warning check, not a hard gate,
+    since Chatterbox itself is tolerant of a range of clip lengths."""
     try:
-        voice_id = active_client.clone_voice(
-            name=name,
-            description=description or f"Cloned voice for {name}",
-            file_paths=file_paths,
+        import torchaudio as ta
+        info = ta.info(str(path))
+        return info.num_frames / info.sample_rate
+    except Exception as exc:  # noqa: BLE001 - duration probing is best-effort
+        logger.debug("voice_clone: could not probe duration for %s: %s", path, exc)
+        return None
+
+
+def validate_reference_clip(path: Path) -> None:
+    """Raises VoiceCloneError if `path` isn't usable as a Chatterbox
+    audio_prompt_path. Duration is only a soft warning (logged), not a
+    hard failure, since Chatterbox tolerates a range of clip lengths."""
+    if not path.exists():
+        raise VoiceCloneError(f"Reference audio clip not found: {path}")
+    if path.suffix.lower() not in ALLOWED_EXTENSIONS:
+        raise VoiceCloneError(
+            f"Unsupported audio format '{path.suffix}' for {path.name}. "
+            f"Allowed: {sorted(ALLOWED_EXTENSIONS)}"
         )
-    except Exception as exc:  # noqa: BLE001 - upload failures vary by transport
-        logger.error("voice_clone: failed to clone voice %r: %s", name, exc)
-        raise VoiceCloneError(f"Failed to clone voice {name!r}: {exc}") from exc
+    if path.stat().st_size == 0:
+        raise VoiceCloneError(f"Reference audio clip is empty: {path}")
 
-    if not voice_id:
-        raise VoiceCloneError(f"Clone succeeded but no voice_id was returned for {name!r}")
-
-    logger.info("voice_clone: created voice_id=%s for name=%r (%d samples)",
-                voice_id, name, len(file_paths))
-
-    return CloneResult(voice_id=voice_id, name=name, sample_count=len(file_paths))
-
-
-def voice_exists(voice_id: str, client: VoiceCloneClient | None = None) -> bool:
-    """Check whether a given voice_id still exists in the account (useful
-    for setup_voice.py to detect a stale ELEVENLABS_VOICE_ID in .env)."""
-    active_client = client or ElevenLabsCloneClient()
-    voices = active_client.list_voices()
-    return any(v.get("voice_id") == voice_id for v in voices)
+    duration = _get_audio_duration_seconds(path)
+    if duration is not None:
+        if duration < MIN_CLIP_SECONDS:
+            logger.warning(
+                "voice_clone: reference clip %s is only %.1fs (recommended >= %.0fs) "
+                "-- cloning quality may suffer", path, duration, MIN_CLIP_SECONDS,
+            )
+        elif duration > RECOMMENDED_MAX_CLIP_SECONDS:
+            logger.warning(
+                "voice_clone: reference clip %s is %.1fs (recommended <= %.0fs) "
+                "-- consider trimming to the clearest single segment", path, duration,
+                RECOMMENDED_MAX_CLIP_SECONDS,
+            )
 
 
-def delete_voice(voice_id: str, client: VoiceCloneClient | None = None) -> None:
-    active_client = client or ElevenLabsCloneClient()
-    active_client.delete_voice(voice_id)
-    logger.info("voice_clone: deleted voice_id=%s", voice_id)
+def resolve_reference_clip(channel: ChannelConfig) -> Path:
+    """Resolve which reference audio clip to use for `channel`'s
+    Chatterbox synthesis. Precedence:
+
+        1. channel.voice_id, if set and non-empty (per-channel override --
+           channels.py can point specific channels at specific clips).
+        2. settings.chatterbox_voice_sample_path (global default clip).
+
+    Raises VoiceCloneError if neither is set, or if the resolved path
+    fails validate_reference_clip(). Callers (voice_gen.get_synthesizer)
+    catch this and fall back to Edge-TTS rather than crashing the pipeline.
+    """
+    candidate = channel.voice_id or settings.chatterbox_voice_sample_path
+    if not candidate:
+        raise VoiceCloneError(
+            f"No Chatterbox reference clip configured for channel {channel.codename!r} "
+            f"-- set channel.voice_id or CHATTERBOX_VOICE_SAMPLE_PATH in .env"
+        )
+
+    path = Path(candidate)
+    validate_reference_clip(path)
+    return path
+
+
+def preview_clip_info(channel: ChannelConfig) -> dict:
+    """Convenience helper for a setup script / CLI: resolves and reports
+    on the reference clip for a channel without raising, so a setup wizard
+    can show the user what's configured and any warnings. Returns a dict
+    with at least a "status" key ("ok" or "error")."""
+    try:
+        path = resolve_reference_clip(channel)
+        duration = _get_audio_duration_seconds(path)
+        return {
+            "status": "ok",
+            "path": str(path),
+            "duration_seconds": duration,
+            "size_bytes": path.stat().st_size,
+        }
+    except VoiceCloneError as exc:
+        return {"status": "error", "error": str(exc)}

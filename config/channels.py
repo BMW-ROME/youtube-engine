@@ -1,7 +1,7 @@
 """
 Channel definitions for the YouTube Engine.
 Each of the 7 built-in channels is a ChannelConfig instance registered in CHANNELS.
-Freestyle mode builds new ChannelConfig instances dynamically at runtime — see core/freestyle.py.
+Freestyle mode builds new ChannelConfig instances dynamically at runtime -- see core/freestyle.py.
 """
 
 import os
@@ -16,8 +16,10 @@ class ChannelConfig:
     niche: str                        # e.g. "Finance"
     channel_id: str                   # YouTube channel ID (from .env)
     category_id: str                  # YouTube category ID
-    voice_engine: str                 # "edge_tts" | "elevenlabs"
-    voice_id: str                     # Edge-TTS voice name or ElevenLabs voice ID
+    voice_engine: str                 # "edge_tts" | "chatterbox"
+    voice_id: str                     # Edge-TTS voice name, OR for chatterbox: a
+                                       # path to a reference audio clip (per-channel
+                                       # override -- see core.voice_clone.resolve_reference_clip)
     video_mode: str                   # "kenburns" | "sketch" | "animated" | "ai_video"
     post_time_est: str                # e.g. "08:00"
     videos_per_day: int = 1
@@ -29,7 +31,7 @@ class ChannelConfig:
     @property
     def cpm_range(self) -> str:
         if self.cpm_low is None or self.cpm_high is None:
-            return "—"
+            return "-"
         return f"${self.cpm_low:g}-{self.cpm_high:g}"
 
 
@@ -110,8 +112,12 @@ THEE3LITE = _register(ChannelConfig(
     niche="Personal Brand",
     channel_id=os.getenv("THEE3LITE_CHANNEL_ID", ""),
     category_id="22",  # People & Blogs
-    voice_engine="elevenlabs",
-    voice_id=settings.elevenlabs_voice_id or "",
+    # MIGRATION (2026-08-17): ElevenLabs -> Chatterbox (local, open-source,
+    # zero-shot cloning). voice_id is now a path to a reference audio clip,
+    # not a remote API voice_id. Falls back to settings.chatterbox_voice_sample_path
+    # if CHATTERBOX_VOICE_SAMPLE_PATH_THEE3LITE isn't set per-channel.
+    voice_engine="chatterbox",
+    voice_id=os.getenv("CHATTERBOX_VOICE_SAMPLE_PATH_THEE3LITE", ""),
     video_mode=os.getenv("THEE3LITE_VIDEO_MODE", "animated"),
     post_time_est="14:00",
     videos_per_day=int(os.getenv("VIDEOS_PER_DAY_THEE3LITE", "1")),
@@ -153,7 +159,7 @@ STORIES = _register(ChannelConfig(
 
 
 def get_channel(codename: str) -> ChannelConfig:
-    """Fetch a registered channel config by codename. Raises KeyError if not found —
+    """Fetch a registered channel config by codename. Raises KeyError if not found --
     use core/freestyle.py to build one dynamically for arbitrary categories instead."""
     if codename not in CHANNELS:
         raise KeyError(

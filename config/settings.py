@@ -1,7 +1,7 @@
 """
 Global settings for the YouTube Engine.
 Loads from environment variables (.env) via pydantic-settings.
-Only OPENAI_API_KEY is required — everything else has safe defaults
+Only OPENAI_API_KEY is required - everything else has safe defaults
 so the system runs in "free mode" out of the box.
 """
 
@@ -21,14 +21,17 @@ class Settings(BaseSettings):
     # ===== REQUIRED =====
     openai_api_key: str = Field(..., alias="OPENAI_API_KEY")
 
-    # ===== Voice Cloning (ElevenLabs) =====
-    elevenlabs_api_key: str | None = Field(default=None, alias="ELEVENLABS_API_KEY")
-    elevenlabs_voice_id: str | None = Field(default=None, alias="ELEVENLABS_VOICE_ID")
-    elevenlabs_model_id: str = Field(default="eleven_monolingual_v1", alias="ELEVENLABS_MODEL_ID")
-    elevenlabs_stability: float = Field(default=0.65, alias="ELEVENLABS_STABILITY")
-    elevenlabs_similarity: float = Field(default=0.80, alias="ELEVENLABS_SIMILARITY")
-    elevenlabs_style: float = Field(default=0.35, alias="ELEVENLABS_STYLE")
-    elevenlabs_boost: bool = Field(default=True, alias="ELEVENLABS_BOOST")
+    # ===== Voice Cloning (Chatterbox) =====
+    # MIGRATION (2026-08-17): replaced ElevenLabs with Resemble AI's
+    # Chatterbox TTS - local, open-source (MIT), zero-shot voice cloning
+    # from a single reference audio clip. No API key needed; runs on your
+    # own GPU/CPU via the chatterbox-tts pip package.
+    chatterbox_voice_sample_path: str | None = Field(
+        default=None, alias="CHATTERBOX_VOICE_SAMPLE_PATH"
+    )
+    chatterbox_device: str = Field(default="cuda", alias="CHATTERBOX_DEVICE")  # "cuda" | "cpu" | "mps"
+    chatterbox_exaggeration: float = Field(default=0.5, alias="CHATTERBOX_EXAGGERATION")
+    chatterbox_cfg_weight: float = Field(default=0.5, alias="CHATTERBOX_CFG_WEIGHT")
 
     # ===== Video Modes =====
     default_video_mode: str = Field(default="kenburns", alias="DEFAULT_VIDEO_MODE")
@@ -59,8 +62,11 @@ class Settings(BaseSettings):
         return path
 
     @property
-    def has_elevenlabs(self) -> bool:
-        return bool(self.elevenlabs_api_key and self.elevenlabs_voice_id)
+    def has_chatterbox(self) -> bool:
+        """True if a global default reference clip is configured. Individual
+        channels can still override via ChannelConfig.voice_id even if this
+        is False -- see core.voice_clone.resolve_reference_clip()."""
+        return bool(self.chatterbox_voice_sample_path)
 
     @property
     def has_replicate(self) -> bool:
@@ -75,5 +81,5 @@ class Settings(BaseSettings):
         )
 
 
-# Singleton — import `settings` everywhere else in the codebase.
+# Singleton - import `settings` everywhere else in the codebase.
 settings = Settings()

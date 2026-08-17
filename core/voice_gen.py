@@ -4,16 +4,29 @@ Stage 2 of the content pipeline: voice narration.
 Converts each scene's narration text into audio, then concatenates all
 scenes into one final voice track for the video. Two engines are supported:
 
-    edge_tts    - free Microsoft neural voices (default for all channels)
-    elevenlabs  - cloned voice (used for the Thee3lite Speaks channel)
+    edge_tts     - free Microsoft neural voices (default for all channels)
+    chatterbox   - local, open-source (MIT) zero-shot voice cloning via
+                   Resemble AI's Chatterbox TTS model (used for the
+                   Thee3lite Speaks channel)
 
-Per the Resilience Architecture in README.md: if a channel is configured for
-ElevenLabs but no API key/voice ID is set, this module falls back to Edge-TTS
-automatically rather than failing the whole pipeline.
+MIGRATION (2026-08-17): ElevenLabs replaced with Chatterbox per decision
+made jointly with the marketing-ops/lead-gen agent. Chatterbox is local-first
+(runs on your own GPU/CPU, no API key, no per-character cost, MIT license),
+matching the local-first infrastructure preference used throughout this
+project (Ollama, etc.) instead of paid cloud APIs. Chatterbox does zero-shot
+voice cloning directly from a single reference audio clip at generation
+time -- there's no separate "upload and train" step like ElevenLabs had, so
+voice_clone.py's job changed from "call a remote API to create a voice_id"
+to "validate and resolve a local reference audio file path."
+
+Per the Resilience Architecture in README.md: if a channel is configured
+for Chatterbox but the chatterbox-tts package isn't installed, no GPU is
+available, or the reference audio file is missing, this module falls back
+to Edge-TTS automatically rather than failing the whole pipeline.
 
 Both the synthesis engine and the audio concatenation step are injected via
 Protocols so this module can be fully unit-tested without a network call,
-an ElevenLabs account, or even the `ffmpeg` binary being installed.
+a GPU, or even the `ffmpeg` binary being installed.
 """
 
 from __future__ import annotations
@@ -65,31 +78,43 @@ class EdgeTTSSynthesizer:
         asyncio.run(_run())
 
 
-class ElevenLabsSynthesizer:
-    """Cloned voice via the ElevenLabs API. Only constructed when
-    settings.has_elevenlabs is True - see get_synthesizer()."""
+class ChatterboxSynthesizer:
+    """Local, open-source (MIT) zero-shot voice cloning via Resemble AI's
+    Chatterbox TTS. Requires the `chatterbox-tts` package and a local
+    GPU/CPU capable of running the model (500M-parameter backbone).
 
-    def __init__(self, api_key: str | None = None):
-        self._api_key = api_key or settings.elevenlabs_api_key
+    `voice_id` here is actually a filesystem path to the reference audio
+    clip used for zero-shot cloning (Chatterbox's "audio_prompt_path"),
+    NOT a remote API voice_id like ElevenLabs used -- see
+    core.voice_clone.resolve_reference_clip() for how this path is
+    validated/resolved from settings.chatterbox_voice_sample_path.
+
+    The model is loaded lazily and cached on the instance so repeated
+    synthesize() calls within one voice_gen run don't reload the model
+    from disk every scene.
+    """
+
+    def __init__(self, device: str | None = None):
+        self._device = device or settings.chatterbox_device
+        self._model = None
+
+    def _get_model(self):
+        if self._model is None:
+            from chatterbox.tts import ChatterboxTTS
+            self._model = ChatterboxTTS.from_pretrained(device=self._device)
+        return self._model
 
     def synthesize(self, text: str, voice_id: str, output_path: Path) -> None:
-        from elevenlabs.client import ElevenLabs
+        import torchaudio as ta
 
-        client = ElevenLabs(api_key=self._api_key)
-        audio = client.text_to_speech.convert(
-            voice_id=voice_id,
-            text=text,
-            model_id=settings.elevenlabs_model_id,
-            voice_settings={
-                "stability": settings.elevenlabs_stability,
-                "similarity_boost": settings.elevenlabs_similarity,
-                "style": settings.elevenlabs_style,
-                "use_speaker_boost": settings.elevenlabs_boost,
-            },
+        model = self._get_model()
+        wav = model.generate(
+            text,
+            audio_prompt_path=voice_id,
+            exaggeration=settings.chatterbox_exaggeration,
+            cfg_weight=settings.chatterbox_cfg_weight,
         )
-        with open(output_path, "wb") as f:
-            for chunk in audio:
-                f.write(chunk)
+        ta.save(str(output_path), wav, model.sr)
 
 
 class FFmpegConcatenator:
@@ -123,28 +148,36 @@ class FFmpegConcatenator:
 
 def get_synthesizer(channel: ChannelConfig) -> Synthesizer:
     """Pick the synthesis engine for a channel, honoring the graceful
-    fallback rule: ElevenLabs configured but unavailable -> Edge-TTS."""
-    if channel.voice_engine == "elevenlabs":
-        if settings.has_elevenlabs:
-            try:
-                import elevenlabs  # noqa: F401
-                return ElevenLabsSynthesizer()
-            except ImportError:
-                logger.warning(
-                    "voice_gen: elevenlabs package not installed for channel %r, "
-                    "falling back to Edge-TTS", channel.codename,
-                )
-        else:
+    fallback rule: Chatterbox configured but unavailable (package missing,
+    no GPU, or reference clip missing) -> Edge-TTS."""
+    if channel.voice_engine == "chatterbox":
+        try:
+            import chatterbox  # noqa: F401
+        except ImportError:
             logger.warning(
-                "voice_gen: channel %r configured for elevenlabs but no API key/voice "
-                "ID set, falling back to Edge-TTS", channel.codename,
+                "voice_gen: chatterbox-tts package not installed for channel %r, "
+                "falling back to Edge-TTS", channel.codename,
             )
+            return EdgeTTSSynthesizer()
+
+        from core.voice_clone import resolve_reference_clip, VoiceCloneError
+        try:
+            resolve_reference_clip(channel)
+        except VoiceCloneError as exc:
+            logger.warning(
+                "voice_gen: channel %r configured for chatterbox but reference "
+                "clip unavailable (%s), falling back to Edge-TTS", channel.codename, exc,
+            )
+            return EdgeTTSSynthesizer()
+
+        return ChatterboxSynthesizer()
     return EdgeTTSSynthesizer()
 
 
 def _resolve_voice_id(channel: ChannelConfig, synthesizer: Synthesizer) -> str:
-    if isinstance(synthesizer, ElevenLabsSynthesizer):
-        return settings.elevenlabs_voice_id or channel.voice_id
+    if isinstance(synthesizer, ChatterboxSynthesizer):
+        from core.voice_clone import resolve_reference_clip
+        return str(resolve_reference_clip(channel))
     return channel.voice_id
 
 
