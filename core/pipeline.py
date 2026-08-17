@@ -19,23 +19,13 @@ code, not the README's stage names):
   10. Upload     -> core.uploader.upload_video (youtube_api mode) OR
                     core.pipedream_uploader.dispatch_upload (local/skip/pipedream)
 
-History note (2026-08-16): the first version of this file (committed via
-GitHub's web editor in a separate session) imported placeholder module/
-function names that were never real (voice_gen.synthesize_voice,
-music_selector.select_music, image_sourcer.source_images,
-thumbnail_gen.generate_thumbnail, effects.apply_effects,
-shorts_generator.generate_shorts). Every ImportError was silently
-swallowed by the per-stage try/except, so the pipeline "ran" without
-crashing but did nothing at every stage. This rewrite fixes that by
-calling the real, already-tested modules directly.
-
-Resilience contract (unchanged from the original design intent):
-  - Every stage is wrapped in try/except.
-  - A failed stage logs the error and returns None instead of raising,
-    unless the stage is marked REQUIRED (script, assembly), in which case
-    the pipeline aborts gracefully and reports which stage failed.
-  - Partial results are preserved in the PipelineResult object so a
-    failed run can be inspected or resumed manually.
+Fix 2026-08-16 (second pass): added the missing content_db.init_db() call
+before create_video(). This was invisible in earlier tests because they
+used a fake content_db stub that didn't require table creation -- once
+tested against the REAL content_db.py, every run failed with
+"sqlite3.OperationalError: no such table: videos". Lesson: fakes that are
+too permissive hide real integration bugs just as effectively as broken
+imports do.
 """
 
 from __future__ import annotations
@@ -61,8 +51,6 @@ REQUIRED_STAGES = {"script", "assembly"}
 
 @dataclass
 class PipelineResult:
-    """Holds the output of each stage plus overall success state."""
-
     topic: str
     channel_codename: str
     video_id: Optional[int] = None
@@ -85,13 +73,12 @@ class PipelineResult:
 
 
 def _run_stage(name: str, result: PipelineResult, func, *args, **kwargs):
-    """Run a single pipeline stage with resilience/fallback handling."""
     try:
         logger.info("Starting stage: %s", name)
         output = func(*args, **kwargs)
         logger.info("Completed stage: %s", name)
         return output
-    except Exception as exc:  # noqa: BLE001 - stage-level resilience boundary
+    except Exception as exc:
         logger.error("Stage '%s' failed: %s", name, exc, exc_info=True)
         result.failed_stages.append(name)
         if name in REQUIRED_STAGES:
@@ -106,38 +93,17 @@ def run_pipeline(
     config: Optional[dict] = None,
     clients: Optional[dict] = None,
 ) -> PipelineResult:
-    """
-    Execute the full 10-stage content pipeline for a given topic/channel.
-
-    Args:
-        topic: video topic string.
-        channel_codename: key into config.channels.CHANNELS (e.g. "finance").
-        config: optional dict of pipeline-level overrides (currently used
-            for upload_mode/webhook_url; reserved for future use).
-        clients: optional dict of injected fake/real clients for testing
-            without real API calls. Recognized keys: "chat_client"
-            (script_writer + seo_optimizer... NOTE: script_writer and
-            seo_optimizer use DIFFERENT ChatClient protocols - see
-            "script_chat_client" and "seo_chat_client" if both need
-            distinct fakes), "synthesizer", "concatenator", "mixer",
-            "image_client", "placeholder_gen", "replicate_client",
-            "shorts_count".
-
-    Each stage is imported lazily inside the function so a missing or
-    broken module in one stage does not prevent the others (or this
-    module itself) from being imported and used.
-    """
     config = config or {}
     clients = clients or {}
     channel = get_channel(channel_codename)
     result = PipelineResult(topic=topic, channel_codename=channel_codename)
 
+    content_db.init_db()
     video_id = content_db.create_video(
         channel=channel.codename, topic=topic, video_mode=channel.video_mode
     )
     result.video_id = video_id
 
-    # ---- Stage 1: Script ----
     try:
         from core.script_writer import generate_script
         result.script = _run_stage(
@@ -150,7 +116,6 @@ def run_pipeline(
         logger.error("script_writer module unavailable: %s", exc)
         result.failed_stages.append("script")
 
-    # ---- Stage 2: Voice ----
     if result.script is not None:
         try:
             from core.voice_gen import generate_voice
@@ -165,7 +130,6 @@ def run_pipeline(
             logger.error("voice_gen module unavailable: %s", exc)
             result.failed_stages.append("voice")
 
-    # ---- Stage 3: Music ----
     if result.voice_path:
         try:
             from core.music_mixer import mix_music
@@ -180,7 +144,6 @@ def run_pipeline(
             result.failed_stages.append("music")
             result.music_path = result.voice_path
 
-    # ---- Stage 4: Images ----
     if result.script is not None:
         try:
             from core.image_gen import generate_images
@@ -197,7 +160,6 @@ def run_pipeline(
             logger.error("image_gen module unavailable: %s", exc)
             result.failed_stages.append("images")
 
-    # ---- Stage 5: Thumbnail (uses first scene image) ----
     if result.image_paths:
         try:
             from core.thumbnail_text import add_thumbnail_text
@@ -210,7 +172,6 @@ def run_pipeline(
             logger.error("thumbnail_text module unavailable: %s", exc)
             result.failed_stages.append("thumbnail")
 
-    # ---- Stage 6: Effects (image sequence -> per-scene video clips) ----
     if result.image_paths:
         try:
             from core.video_effects import apply_effect
@@ -225,13 +186,10 @@ def run_pipeline(
             logger.error("video_effects module unavailable: %s", exc)
             result.failed_stages.append("effects")
 
-    # ---- Stage 7: Assembly (REQUIRED) ----
     if result.effect_clip_paths and result.voice_path:
         try:
             from core.video_assembler import assemble_video, build_chapter_markers
-            final_path = str(
-                settings.content_path / "videos" / f"{video_id}.mp4"
-            )
+            final_path = str(settings.content_path / "videos" / f"{video_id}.mp4")
             result.final_video_path = _run_stage(
                 "assembly", result, assemble_video,
                 clip_paths=result.effect_clip_paths,
@@ -250,7 +208,6 @@ def run_pipeline(
             result.failed_stages.append("assembly")
             raise
 
-    # ---- Stage 8: SEO ----
     if result.script is not None:
         try:
             from core.seo_optimizer import optimize_seo
@@ -268,7 +225,6 @@ def run_pipeline(
             logger.error("seo_optimizer module unavailable: %s", exc)
             result.failed_stages.append("seo")
 
-    # ---- Stage 9: Shorts ----
     if result.final_video_path and settings.generate_shorts:
         try:
             from core.shorts_gen import generate_shorts
@@ -282,7 +238,6 @@ def run_pipeline(
             logger.error("shorts_gen module unavailable: %s", exc)
             result.failed_stages.append("shorts")
 
-    # ---- Stage 10: Upload ----
     if result.final_video_path and result.seo_result is not None:
         upload_mode = config.get("upload_mode", settings.upload_mode)
         try:
@@ -310,16 +265,13 @@ def run_pipeline(
         content_db.update_status(video_id, "PUBLISHED")
         logger.info("Pipeline completed successfully for topic: %s", topic)
     else:
-        logger.warning(
-            "Pipeline completed with failures in stages: %s", result.failed_stages
-        )
+        logger.warning("Pipeline completed with failures in stages: %s", result.failed_stages)
 
     return result
 
 
 if __name__ == "__main__":
     import sys
-
     topic_arg = sys.argv[1] if len(sys.argv) > 1 else "default topic"
     channel_arg = sys.argv[2] if len(sys.argv) > 2 else "finance"
     run_pipeline(topic_arg, channel_arg)

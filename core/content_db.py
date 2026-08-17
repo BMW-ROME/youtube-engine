@@ -197,10 +197,7 @@ def increment_retry(video_id: int) -> None:
 
 
 def update_metadata(video_id: int, patch: dict[str, Any]) -> None:
-    """Merge `patch` into the video's existing metadata JSON blob. Used by
-    script_writer, seo_optimizer, shorts_gen etc. to attach their outputs
-    (script, seo fields, pinned_comment, end_screen_topics) without each
-    stage needing its own dedicated columns."""
+    """Merge `patch` into the video's existing metadata JSON blob."""
     with get_connection() as conn:
         row = conn.execute(
             "SELECT metadata_json FROM videos WHERE id = ?", (video_id,)
@@ -272,6 +269,30 @@ def get_failed_videos(max_retries: int = 3) -> list[VideoRecord]:
             (max_retries,),
         ).fetchall()
         return [VideoRecord.from_row(r) for r in rows]
+
+
+def get_next_topic(channel: str | None = None) -> str | None:
+    """
+    Fetch the next topic to produce a video for, used by core/orchestrator.py's
+    scheduler loop. Returns None if there's no sensible next topic to suggest
+    -- the caller (orchestrator._next_topic) falls back to a static rotation
+    in that case, so this never blocks the scheduler.
+
+    Added 2026-08-16: orchestrator.py was calling this function but it never
+    existed in content_db.py, so the "pull next topic from the database"
+    feature silently fell back to the static topic list every time. This
+    v1 heuristic re-queues the topic string from the oldest FAILED video
+    (within retry budget) for the given channel, if any, so failed videos
+    get automatically retried with a fresh video row on the next scheduled
+    run. Returns None if no failed videos exist -- there's no topic-ideation
+    feature built yet, so this intentionally does not invent new topics.
+    """
+    failed = get_failed_videos(max_retries=3)
+    if channel:
+        failed = [v for v in failed if v.channel == channel]
+    if not failed:
+        return None
+    return failed[0].topic
 
 
 def add_short(parent_video_id: int, title: str, output_path: str | None = None) -> int:

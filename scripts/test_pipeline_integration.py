@@ -21,6 +21,14 @@ nothing at every single stage. BUILD_LOG.md's checkmarks were all correct
 about each MODULE in isolation, but wrong about the SYSTEM, because nobody
 ran them together until now.
 
+Second pass (2026-08-16): running these tests against the REAL content_db.py
+(not a stub) surfaced a second real bug -- pipeline.py never called
+content_db.init_db() before create_video(), so every run failed with
+"no such table: videos". Also unified seo_optimizer.py's ChatClient
+protocol to match script_writer.py's create_chat_completion() shape, and
+added content_db.get_next_topic() which orchestrator.py was calling but
+never existed.
+
 This script exercises the full 10-stage chain with every external
 dependency faked (OpenAI, Edge-TTS, ffmpeg, DALL-E, YouTube API) so it
 costs nothing to run and has no external dependencies, and asserts that:
@@ -31,6 +39,8 @@ costs nothing to run and has no external dependencies, and asserts that:
      - the video is still assembled - but IS correctly recorded in
      failed_stages and blocks the upload step (no SEO metadata to upload
      with).
+  3. content_db.get_next_topic() correctly surfaces a FAILED video's topic
+     for retry, and returns None when there's nothing to retry.
 
 Run with:
     python scripts/test_pipeline_integration.py
@@ -44,12 +54,12 @@ import sys
 
 
 class FakeSEOChatClient:
-    """Matches seo_optimizer.ChatClient's .complete(system, user) protocol
-    -- NOTE this is a different Protocol shape than script_writer's
-    .create_chat_completion(model=, messages=, response_format=). Keep
-    these separate; do not assume all ChatClient-named protocols match."""
+    """Matches the UNIFIED ChatClient protocol shared by script_writer.py
+    and seo_optimizer.py: create_chat_completion(model=, messages=,
+    response_format=). Fixed 2026-08-16 -- seo_optimizer.py previously used
+    a different, incompatible .complete(system, user) shape."""
 
-    def complete(self, system_prompt: str, user_prompt: str) -> str:
+    def create_chat_completion(self, *, model, messages, response_format):
         import json
         return json.dumps({
             "title": "3 Index Funds That Beat the S&P 500",
@@ -64,7 +74,7 @@ class FakeSEOChatClient:
 class FailingSEOChatClient:
     """Simulates an SEO API outage to test the non-required-stage failure path."""
 
-    def complete(self, system_prompt: str, user_prompt: str) -> str:
+    def create_chat_completion(self, *, model, messages, response_format):
         raise RuntimeError("simulated SEO API outage")
 
 
@@ -108,10 +118,30 @@ def test_non_required_stage_failure_is_survivable() -> None:
     print("[PASS] test_non_required_stage_failure_is_survivable: video still assembled despite SEO outage")
 
 
+def test_get_next_topic_retry_queue() -> None:
+    """Confirms content_db.get_next_topic() (added 2026-08-16 to fix
+    orchestrator.py's previously-nonexistent call) actually returns the
+    oldest FAILED video's topic when one exists, and None otherwise."""
+    from core import content_db
+
+    content_db.init_db()
+    assert content_db.get_next_topic(channel="finance") is None, (
+        "Expected None with no FAILED videos yet"
+    )
+
+    vid = content_db.create_video(channel="finance", topic="Topic needing retry")
+    content_db.update_status(vid, "FAILED", error_message="simulated failure")
+
+    next_topic = content_db.get_next_topic(channel="finance")
+    assert next_topic == "Topic needing retry", f"Expected retry topic, got {next_topic!r}"
+    print("[PASS] test_get_next_topic_retry_queue: FAILED video topic correctly surfaced for retry")
+
+
 if __name__ == "__main__":
     try:
         test_happy_path()
         test_non_required_stage_failure_is_survivable()
+        test_get_next_topic_retry_queue()
     except AssertionError as exc:
         print(f"[FAIL] {exc}")
         sys.exit(1)

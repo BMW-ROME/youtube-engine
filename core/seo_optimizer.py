@@ -12,9 +12,13 @@ Public API:
     optimize_seo(client, channel, script, chapter_markers=None) -> SEOResult
 
 Design notes:
-- Same dependency-injection pattern as script_writer.py: a ChatClient
-  protocol is accepted so this module is fully testable with a fake
-  client and zero OpenAI API cost.
+- Uses the SAME ChatClient protocol as script_writer.py --
+  create_chat_completion(model=, messages=, response_format=) -- fixed
+  2026-08-16. The original version of this module used a different,
+  incompatible .complete(system, user) protocol, meaning a single real
+  OpenAIChatClient wrapper couldn't be reused across script_writer.py and
+  seo_optimizer.py without writing two adapter shims. Now one client
+  class/fake works for both stages.
 - Same retry-then-fail resilience: malformed JSON triggers up to 3
   attempts before raising SEOGenerationError.
 - Title is hard-capped at 60 chars, tags at 500 chars total, per README.
@@ -32,6 +36,7 @@ logger = logging.getLogger(__name__)
 MAX_TITLE_CHARS = 60
 MAX_TAGS_CHARS = 500
 MAX_RETRIES = 3
+MODEL = "gpt-4o"
 
 
 class SEOGenerationError(Exception):
@@ -39,10 +44,11 @@ class SEOGenerationError(Exception):
 
 
 class ChatClient(Protocol):
-    """Minimal interface this module needs from an OpenAI-style client,
-    matching the protocol used in script_writer.py for consistency."""
+    """Same protocol as core.script_writer.ChatClient, so a single real
+    OpenAIChatClient implementation can be shared across both stages."""
 
-    def complete(self, system_prompt: str, user_prompt: str) -> str:
+    def create_chat_completion(self, *, model: str, messages: list[dict[str, str]],
+                                response_format: dict[str, str]) -> str:
         ...
 
 
@@ -118,7 +124,9 @@ def optimize_seo(
     Generate SEO metadata for a finished video.
 
     Args:
-        client: injected ChatClient (real OpenAI wrapper or fake for tests).
+        client: injected ChatClient (real OpenAI wrapper or fake for tests),
+            using the SAME create_chat_completion(model=, messages=,
+            response_format=) protocol as core.script_writer.ChatClient.
         channel: ChannelConfig instance (used for niche context).
         script: the script dict produced by script_writer.py (hook, scenes,
             seo_keywords, etc).
@@ -139,7 +147,14 @@ def optimize_seo(
     last_error: Optional[Exception] = None
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            raw = client.complete(system_prompt, user_prompt)
+            raw = client.create_chat_completion(
+                model=MODEL,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                response_format={"type": "json_object"},
+            )
             data = json.loads(raw)
             _validate(data)
 
