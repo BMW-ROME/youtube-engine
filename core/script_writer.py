@@ -13,6 +13,15 @@ in README.md:
 The OpenAI client is injected rather than constructed at import time so this
 module can be unit-tested with a fake/mock client and never accidentally
 burn real API credits during tests.
+
+Brand wiring (2026-08-17): pulls voice/tone + language do/don't rules from
+the shared marketing-ops brand file via core.brand_aware_prompts, so this
+channel's scripts don't drift from the canonical brand identity used across
+YouTube, n8n, and the voice-acting profiles. Import is wrapped in try/except
+and the call itself never raises (brand_aware_prompts/brand_loader already
+degrade to a built-in default) -- if brand wiring is ever unavailable for
+any reason, script generation continues with the Retention Architecture
+prompt alone rather than failing the whole stage.
 """
 
 from __future__ import annotations
@@ -144,6 +153,31 @@ people/logos/violence, describe style not brand names"}
 """
 
 
+def _get_brand_style_block() -> str:
+    """Fetches the brand voice/tone block from marketing-ops via
+    core.brand_aware_prompts. Never raises -- returns "" if the brand
+    wiring is unavailable for any reason (missing module, network issue,
+    etc.), so script generation always proceeds regardless."""
+    try:
+        from core.brand_aware_prompts import get_script_style_block
+        return get_script_style_block()
+    except Exception as exc:  # noqa: BLE001 - brand wiring is best-effort here
+        logger.warning("script_writer: brand style block unavailable: %s", exc)
+        return ""
+
+
+def _build_system_prompt() -> str:
+    brand_block = _get_brand_style_block()
+    if not brand_block:
+        return RETENTION_SYSTEM_PROMPT
+    return (
+        f"{RETENTION_SYSTEM_PROMPT}\n\n"
+        f"Brand voice/tone (from the shared marketing-ops brand identity - "
+        f"apply this on top of the Retention Architecture above, never "
+        f"instead of it):\n{brand_block}"
+    )
+
+
 def _build_user_prompt(channel: ChannelConfig, topic: str) -> str:
     return (
         f"Channel niche: {channel.niche}\n"
@@ -171,13 +205,15 @@ def generate_script(
     if video_id is not None:
         content_db.update_status(video_id, "SCRIPTING")
 
+    system_prompt = _build_system_prompt()
+
     last_error: Exception | None = None
     for attempt in range(1, MAX_RETRIES + 2):
         try:
             raw = active_client.create_chat_completion(
                 model=MODEL,
                 messages=[
-                    {"role": "system", "content": RETENTION_SYSTEM_PROMPT},
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": _build_user_prompt(channel, topic)},
                 ],
                 response_format={"type": "json_object"},

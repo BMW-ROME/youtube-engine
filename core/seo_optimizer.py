@@ -22,6 +22,15 @@ Design notes:
 - Same retry-then-fail resilience: malformed JSON triggers up to 3
   attempts before raising SEOGenerationError.
 - Title is hard-capped at 60 chars, tags at 500 chars total, per README.
+
+Brand wiring (2026-08-17): pulls voice/tone + niche guidance from the shared
+marketing-ops brand file, and appends a lead-gen CTA to the description and
+pinned comment, via core.brand_aware_prompts. The CTA is appended AFTER the
+LLM-generated content rather than left for the LLM to invent, per
+BRAND_INTEGRATION_SNIPPET.md -- the model should never fabricate contact
+info. All brand/CTA calls are wrapped in try/except; a failure there never
+blocks SEO metadata generation, it just omits the CTA/brand block for that
+run.
 """
 
 from __future__ import annotations
@@ -62,8 +71,56 @@ class SEOResult:
     end_screen_topics: List[str] = field(default_factory=list)
 
 
+def _get_brand_style_block() -> str:
+    """Fetches the SEO-facing brand voice/tone + niches block from
+    marketing-ops via core.brand_aware_prompts. Never raises -- returns ""
+    if brand wiring is unavailable, so SEO generation always proceeds."""
+    try:
+        from core.brand_aware_prompts import get_seo_style_block
+        return get_seo_style_block()
+    except Exception as exc:  # noqa: BLE001 - brand wiring is best-effort here
+        logger.warning("seo_optimizer: brand style block unavailable: %s", exc)
+        return ""
+
+
+def _get_video_cta() -> str:
+    """Fetches the ready-to-append video description CTA from
+    core.brand_aware_prompts (lead_capture.yaml). Never raises -- returns ""
+    if unavailable, so the description is simply left without a CTA rather
+    than blocking SEO generation."""
+    try:
+        from core.brand_aware_prompts import get_video_cta_text
+        return get_video_cta_text(long=False)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("seo_optimizer: video CTA unavailable: %s", exc)
+        return ""
+
+
+def _get_pinned_comment_cta() -> str:
+    """Fetches the ready-to-use pinned comment CTA from
+    core.brand_aware_prompts. Never raises -- returns "" if unavailable."""
+    try:
+        from core.brand_aware_prompts import get_pinned_comment_cta
+        return get_pinned_comment_cta()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("seo_optimizer: pinned comment CTA unavailable: %s", exc)
+        return ""
+
+
+_CTA_PLACEHOLDER_MARKER = "[CONTACT INFO NOT YET CONFIGURED"
+
+
+def _is_unconfigured_placeholder(text: str) -> bool:
+    """True if `text` is brand_aware_prompts' known placeholder for an
+    unconfigured lead_capture.yaml contact field. Per
+    BRAND_INTEGRATION_SNIPPET.md: never ship this placeholder in real
+    output, so callers should skip appending it."""
+    return _CTA_PLACEHOLDER_MARKER in text
+
+
 def _build_system_prompt(channel) -> str:
-    return (
+    brand_block = _get_brand_style_block()
+    base = (
         "You are a YouTube SEO specialist. Given a video script, generate metadata "
         "that maximizes click-through rate and search discoverability while staying "
         "accurate to the content. Respond with ONLY valid JSON, no markdown fences, "
@@ -75,7 +132,16 @@ def _build_system_prompt(channel) -> str:
         f"Tags combined must be {MAX_TAGS_CHARS} characters or fewer. "
         "pinned_comment must be under 200 characters and should seed replies/engagement. "
         "Include 3-5 relevant hashtags. Weave in chapter timestamps into the description "
-        "if chapter markers are provided."
+        "if chapter markers are provided. Do NOT invent or include any contact info, "
+        "links, or calls-to-action in the description or pinned_comment -- those are "
+        "appended separately after generation."
+    )
+    if not brand_block:
+        return base
+    return (
+        f"{base}\n\n"
+        f"Brand voice/tone for this copy (from the shared marketing-ops brand identity):"
+        f"\n{brand_block}"
     )
 
 
@@ -135,7 +201,9 @@ def optimize_seo(
 
     Returns:
         SEOResult with title/description/tags/hashtags/pinned_comment/
-        end_screen_topics, all length-capped per README limits.
+        end_screen_topics, all length-capped per README limits. The
+        description and pinned_comment have the brand CTA appended, unless
+        the CTA is unavailable or still an unconfigured placeholder.
 
     Raises:
         SEOGenerationError: if valid JSON could not be produced after
@@ -164,12 +232,23 @@ def optimize_seo(
                 while len(",".join(tags)) > MAX_TAGS_CHARS and tags:
                     tags.pop()
 
+            description = data["description"].strip()
+            cta_text = _get_video_cta()
+            if cta_text and not _is_unconfigured_placeholder(cta_text):
+                description = f"{description}\n\n{cta_text}"
+
+            pinned_comment = _truncate(data["pinned_comment"].strip(), 200)
+            pinned_cta = _get_pinned_comment_cta()
+            if pinned_cta and not _is_unconfigured_placeholder(pinned_cta):
+                combined = f"{pinned_comment} {pinned_cta}".strip()
+                pinned_comment = _truncate(combined, 200)
+
             return SEOResult(
                 title=_truncate(data["title"].strip(), MAX_TITLE_CHARS),
-                description=data["description"].strip(),
+                description=description,
                 tags=tags,
                 hashtags=data["hashtags"],
-                pinned_comment=_truncate(data["pinned_comment"].strip(), 200),
+                pinned_comment=pinned_comment,
                 end_screen_topics=data.get("end_screen_topics", []),
             )
         except (json.JSONDecodeError, ValueError, KeyError) as exc:
