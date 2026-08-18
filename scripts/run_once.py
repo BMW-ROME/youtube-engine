@@ -20,6 +20,14 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+from pathlib import Path
+
+# Ensure the repo root (parent of scripts/) is importable as `core`/`config`
+# when this file is run directly (python scripts/run_once.py) -- Python only
+# auto-adds the SCRIPT'S OWN directory to sys.path, not its parent, so
+# without this, `from core.script_writer import ...` fails with
+# ModuleNotFoundError no matter what directory you run this from.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from config.channels import get_channel
 from core import content_db

@@ -32,6 +32,13 @@ import argparse
 import sys
 from pathlib import Path
 
+# Ensure the repo root (parent of scripts/) is importable as `core`/`config`
+# when this file is run directly (python scripts/setup_voice.py) -- Python
+# only auto-adds the SCRIPT'S OWN directory to sys.path, not its parent,
+# so without this, `from core.voice_clone import ...` fails with
+# ModuleNotFoundError no matter what directory you run this from.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 
 def check_chatterbox_importable() -> bool:
     print("=" * 60)
