@@ -42,6 +42,14 @@ to ANY non-empty string -- it is never actually sent anywhere real):
 
 Exit code 0 only if every stage that SHOULD have run (given your installed
 optional deps) actually succeeded. Prints a per-stage report either way.
+
+FIX (2026-08-18): the original fake image bytes were only the PNG magic-
+number signature (b"\x89PNG\r\n\x1a\n" + padding), which is NOT a
+structurally valid PNG file. Running this against the real repo surfaced
+that core.thumbnail_text.py correctly refused to open it (Pillow's
+UnidentifiedImageError), which is the module doing its job right -- but it
+meant Stage 5 never got genuinely exercised. Now generates a real, tiny,
+valid PNG via Pillow at runtime so the thumbnail overlay stage actually runs.
 """
 
 from __future__ import annotations
@@ -131,9 +139,24 @@ def install_fake_openai_transport():
         }],
     }
 
-    fake_image_b64 = __import__("base64").b64encode(
-        b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
-    ).decode("ascii")
+    # Generate a REAL, structurally valid PNG via Pillow (not just the PNG
+    # magic-number signature) so downstream stages that actually try to
+    # OPEN the image with Pillow (thumbnail_text.py) succeed rather than
+    # correctly-but-uselessly rejecting a malformed stub. If Pillow isn't
+    # installed, fall back to the minimal signature stub -- image_gen.py's
+    # own placeholder path already tolerates non-openable bytes gracefully;
+    # this fallback just means the thumbnail stage will legitimately skip.
+    try:
+        from PIL import Image
+        import io as _io
+        _img = Image.new("RGB", (64, 64), color=(40, 60, 90))
+        _buf = _io.BytesIO()
+        _img.save(_buf, format="PNG")
+        fake_image_bytes = _buf.getvalue()
+    except ImportError:
+        fake_image_bytes = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
+
+    fake_image_b64 = __import__("base64").b64encode(fake_image_bytes).decode("ascii")
     fake_image_response = {"created": 0, "data": [{"b64_json": fake_image_b64}]}
 
     call_count = {"chat": 0}
