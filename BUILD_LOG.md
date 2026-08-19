@@ -315,6 +315,20 @@ as deliberate drops (dead spec) rather than unfinished work.
   quick-start refreshed (adds index_rag.py, local_image_stub.py, cards.html, search.html,
   app.js; run_once.py marked legacy, validate_e2e.py promoted).
 
+- 2026-08-19: Post-audit correctness sweep (part 2 - $0 pipeline test). The old
+  "every dependency faked, costs nothing" docstring in test_pipeline_integration.py
+  was only true for SEO: the script (OpenAI/Ollama), voice (Edge-TTS), and images
+  (DALL-E/LocalAI) stages still called their real backends, so the test burned real
+  API calls. Now ALL stages are injected with fakes (FakeScriptClient,
+  FakeSynthesizer, FakeConcatenator, FakeMixer, FakeImageClient,
+  FakePlaceholderGenerator) via a shared _fake_clients() helper; the fake PNG/WAV
+  bytes are real formats so the real ffmpeg effect + assembly stages still decode
+  them. UPLOAD_MODE is forced to "local" so nothing leaves the machine (ffmpeg is
+  the only remaining real binary dependency). Also hardened test 3 to use a
+  dedicated "__retry_test__" channel so pre-existing FAILED rows in the real
+  content.db can't break it. Full 10-stage happy path + SEO-outage survival path +
+  retry-queue test all pass with zero network calls.
+
 ## Rebuild Rule
 
 Every session: commit and push working code before closing, even if incomplete.

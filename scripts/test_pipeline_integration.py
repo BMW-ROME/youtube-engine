@@ -1,56 +1,9 @@
-"""
-scripts/test_pipeline_integration.py
-
-End-to-end integration test for core/pipeline.py.
-
-This is the test that should have existed BEFORE Phases 3-6 were marked
-complete in BUILD_LOG.md. An audit on 2026-08-16 found that pipeline.py
-(written via GitHub's web editor in a separate session) imported module
-and function names that never matched the real, already-committed code:
-
-    voice_gen.synthesize_voice        (real: voice_gen.generate_voice)
-    music_selector.select_music       (real: music_mixer.mix_music)
-    image_sourcer.source_images       (real: image_gen.generate_images)
-    thumbnail_gen.generate_thumbnail  (real: thumbnail_text.add_thumbnail_text)
-    effects.apply_effects             (real: video_effects.apply_effect)
-    shorts_generator.generate_shorts  (real: shorts_gen.generate_shorts)
-
-Every one of these was a silent ImportError swallowed by pipeline.py's own
-per-stage try/except, so the pipeline "ran" without crashing but produced
-nothing at every single stage. BUILD_LOG.md's checkmarks were all correct
-about each MODULE in isolation, but wrong about the SYSTEM, because nobody
-ran them together until now.
-
-Second pass (2026-08-16): running these tests against the REAL content_db.py
-(not a stub) surfaced a second real bug -- pipeline.py never called
-content_db.init_db() before create_video(), so every run failed with
-"no such table: videos". Also unified seo_optimizer.py's ChatClient
-protocol to match script_writer.py's create_chat_completion() shape, and
-added content_db.get_next_topic() which orchestrator.py was calling but
-never existed.
-
-This script exercises the full 10-stage chain with every external
-dependency faked (OpenAI, Edge-TTS, ffmpeg, DALL-E, YouTube API) so it
-costs nothing to run and has no external dependencies, and asserts that:
-
-  1. The full happy path produces a final video, SEO metadata, and an
-     upload result, with zero failed stages.
-  2. A non-required stage failing (SEO outage) does NOT kill the pipeline
-     - the video is still assembled - but IS correctly recorded in
-     failed_stages and blocks the upload step (no SEO metadata to upload
-     with).
-  3. content_db.get_next_topic() correctly surfaces a FAILED video's topic
-     for retry, and returns None when there's nothing to retry.
-
-Run with:
-    python scripts/test_pipeline_integration.py
-
-Exits non-zero if any assertion fails, so this can be wired into CI later.
-"""
-
 from __future__ import annotations
 
+import base64
+import io
 import sys
+import wave
 from pathlib import Path
 
 # Ensure the repo root (parent of scripts/) is importable as `core`/`config`
@@ -59,6 +12,106 @@ from pathlib import Path
 # so without this, `from core.pipeline import ...` fails with
 # ModuleNotFoundError no matter what directory you run this from.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+# Tiny valid 1x1 transparent PNG (fallback if Pillow is unavailable).
+_MINIMAL_PNG = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+)
+
+
+def _fake_png(size: str = "1024x1024") -> bytes:
+    """Return valid PNG bytes so real ffmpeg stages can decode the image."""
+    try:
+        from PIL import Image, ImageDraw
+
+        w, h = (int(part) for part in size.split("x"))
+        img = Image.new("RGB", (w, h), (28, 40, 64))
+        ImageDraw.Draw(img).ellipse((0, 0, w, h), fill=(210, 130, 50))
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return buf.getvalue()
+    except Exception:  # noqa: BLE001 - Pillow is optional-ish here; use fallback
+        return _MINIMAL_PNG
+
+
+def _fake_wav(seconds: float = 0.5, rate: int = 16000) -> bytes:
+    """Return valid (silent) WAV bytes so ffmpeg can decode the voice track."""
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(b"\x00\x00" * int(rate * seconds))
+    return buf.getvalue()
+
+
+class FakeScriptClient:
+    """Matches the UNIFIED ChatClient protocol (create_chat_completion(model=,
+    messages=, response_format=)) and returns a Script-shaped JSON object that
+    satisfies script_writer._validate_script (>=3 scenes, non-empty fields)."""
+
+    def create_chat_completion(self, *, model, messages, response_format):
+        import json
+        return json.dumps({
+            "hook": "These 3 index funds quietly beat the market for 20 straight years.",
+            "scenes": [
+                {"narration": "Scene one explains what an index fund actually is.",
+                 "visual_description": "A clean growth chart of an index fund."},
+                {"narration": "Scene two breaks down expense ratios and fees.",
+                 "visual_description": "A magnifying glass over a fee table."},
+                {"narration": "Scene three shows how to start investing today.",
+                 "visual_description": "A simple step-by-step investment checklist."},
+            ],
+            "outro": "Like and subscribe for more investing breakdowns.",
+            "seo_keywords": ["index funds", "investing", "retirement"],
+            "chapter_timestamps": [
+                {"time": "00:00", "title": "Intro"},
+                {"time": "00:15", "title": "Fund 1"},
+            ],
+            "affiliate_slots": [],
+        })
+
+
+class FakeSynthesizer:
+    """Implements voice_gen.Synthesizer: synthesize(text, voice_id, output_path).
+    Writes real WAV bytes so downstream ffmpeg can decode the track."""
+
+    def synthesize(self, text: str, voice_id: str, output_path: Path) -> None:
+        Path(output_path).write_bytes(_fake_wav())
+
+
+class FakeConcatenator:
+    """Implements voice_gen.AudioConcatenator: concatenate(input_paths, output).
+    Concatenates the (silent) segments into one WAV track."""
+
+    def concatenate(self, input_paths: list[Path], output_path: Path) -> None:
+        frames = b"".join(Path(p).read_bytes() if p.exists() else b"" for p in input_paths)
+        Path(output_path).write_bytes(frames or _fake_wav())
+
+
+class FakeMixer:
+    """Implements music_mixer.AudioMixer: mix(voice_path, music_path, output_path,
+    music_volume). Writes a valid WAV so assembly can still read the track."""
+
+    def mix(
+        self, voice_path: Path, music_path: Path, output_path: Path, music_volume: float
+    ) -> None:
+        Path(output_path).write_bytes(_fake_wav())
+
+
+class FakeImageClient:
+    """Implements image_gen.ImageClient: generate_image(model, prompt, size).
+    Returns a real PNG so the kenburns/sketch effect stages can decode it."""
+
+    def generate_image(self, *, model, prompt, size):
+        return _fake_png(size)
+
+
+class FakePlaceholderGenerator:
+    """Implements image_gen.PlaceholderGenerator: generate(size) -> bytes."""
+
+    def generate(self, size: str = "1024x1024") -> bytes:
+        return _fake_png(size)
 
 
 class FakeSEOChatClient:
@@ -86,13 +139,28 @@ class FailingSEOChatClient:
         raise RuntimeError("simulated SEO API outage")
 
 
+def _fake_clients(seo_client=None) -> dict:
+    """Every external backend injected as a fake: script, voice, music, images,
+    and SEO. Only ffmpeg remains real (it processes the fake PNG/WAV files)."""
+    return {
+        "script_chat_client": FakeScriptClient(),
+        "synthesizer": FakeSynthesizer(),
+        "concatenator": FakeConcatenator(),
+        "mixer": FakeMixer(),
+        "image_client": FakeImageClient(),
+        "placeholder_gen": FakePlaceholderGenerator(),
+        "seo_chat_client": seo_client or FakeSEOChatClient(),
+    }
+
+
 def test_happy_path() -> None:
     from core.pipeline import run_pipeline
 
     result = run_pipeline(
         topic="3 Index Funds That Beat the S&P 500",
         channel_codename="finance",
-        clients={"seo_chat_client": FakeSEOChatClient()},
+        config={"upload_mode": "local"},
+        clients=_fake_clients(),
     )
 
     assert result.success, f"Expected success, got failed_stages={result.failed_stages}"
@@ -111,7 +179,8 @@ def test_non_required_stage_failure_is_survivable() -> None:
     result = run_pipeline(
         topic="Test topic for failure path",
         channel_codename="finance",
-        clients={"seo_chat_client": FailingSEOChatClient()},
+        config={"upload_mode": "local"},
+        clients=_fake_clients(seo_client=FailingSEOChatClient()),
     )
 
     assert not result.success, "Expected success=False when SEO stage fails"
@@ -129,18 +198,21 @@ def test_non_required_stage_failure_is_survivable() -> None:
 def test_get_next_topic_retry_queue() -> None:
     """Confirms content_db.get_next_topic() (added 2026-08-16 to fix
     orchestrator.py's previously-nonexistent call) actually returns the
-    oldest FAILED video's topic when one exists, and None otherwise."""
+    oldest FAILED video's topic when one exists, and None otherwise.
+    Uses a dedicated test channel so pre-existing FAILED rows in the real
+    content.db can't break the assertions."""
     from core import content_db
 
+    test_channel = "__retry_test__"
     content_db.init_db()
-    assert content_db.get_next_topic(channel="finance") is None, (
-        "Expected None with no FAILED videos yet"
+    assert content_db.get_next_topic(channel=test_channel) is None, (
+        "Expected None with no FAILED videos for the test channel yet"
     )
 
-    vid = content_db.create_video(channel="finance", topic="Topic needing retry")
+    vid = content_db.create_video(channel=test_channel, topic="Topic needing retry")
     content_db.update_status(vid, "FAILED", error_message="simulated failure")
 
-    next_topic = content_db.get_next_topic(channel="finance")
+    next_topic = content_db.get_next_topic(channel=test_channel)
     assert next_topic == "Topic needing retry", f"Expected retry topic, got {next_topic!r}"
     print("[PASS] test_get_next_topic_retry_queue: FAILED video topic correctly surfaced for retry")
 
