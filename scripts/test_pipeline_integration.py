@@ -51,6 +51,14 @@ Exits non-zero if any assertion fails, so this can be wired into CI later.
 from __future__ import annotations
 
 import sys
+from pathlib import Path
+
+# Ensure the repo root (parent of scripts/) is importable as `core`/`config`
+# when this file is run directly (python scripts/test_pipeline_integration.py) --
+# Python only auto-adds the SCRIPT'S OWN directory to sys.path, not its parent,
+# so without this, `from core.pipeline import ...` fails with
+# ModuleNotFoundError no matter what directory you run this from.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
 class FakeSEOChatClient:

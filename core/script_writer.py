@@ -37,7 +37,9 @@ from core import content_db
 
 logger = logging.getLogger(__name__)
 
-MODEL = "gpt-4o"
+# Model used for chat completions. Overridable via LLM_MODEL so local
+# OpenAI-compatible backends (Ollama) can send a model name they actually host.
+MODEL = settings.llm_model
 MAX_RETRIES = 2
 
 
@@ -52,16 +54,20 @@ class ChatClient(Protocol):
 
 class OpenAIChatClient:
     """Thin wrapper around the real openai SDK. Constructed lazily so importing
-    this module never requires an API key to be present."""
+    this module never requires an API key to be present. Honors an optional
+    OpenAI-compatible base_url (e.g. a local Ollama server) via settings."""
 
-    def __init__(self, api_key: str | None = None):
+    def __init__(self, api_key: str | None = None, base_url: str | None = None):
         self._api_key = api_key or settings.openai_api_key
+        # "" (empty env value from .env.template) must coerce to None so the
+        # SDK falls back to real OpenAI rather than receiving an empty base_url.
+        self._base_url = (base_url if base_url is not None else settings.openai_base_url) or None
         self._client = None
 
     def _get_client(self):
         if self._client is None:
             from openai import OpenAI
-            self._client = OpenAI(api_key=self._api_key)
+            self._client = OpenAI(api_key=self._api_key, base_url=self._base_url)
         return self._client
 
     def create_chat_completion(self, *, model: str, messages: list[dict[str, str]],

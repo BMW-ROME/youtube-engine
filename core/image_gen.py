@@ -26,7 +26,10 @@ from core.script_writer import Script
 
 logger = logging.getLogger(__name__)
 
-MODEL = "dall-e-3"
+# Image model sent to the backend. Overridable via IMAGE_MODEL so OpenAI-
+# compatible local image servers (e.g. LocalAI at IMAGE_BASE_URL) can use a
+# model name they actually host (like sdxl-turbo).
+MODEL = settings.image_model
 MAX_FILTER_RETRIES = 2  # sanitize attempt + safety-suffix attempt
 
 # Words/phrases that commonly trigger DALL-E's content filter. Stripped out
@@ -59,16 +62,22 @@ class ImageClient(Protocol):
 
 
 class OpenAIImageClient:
-    """Thin wrapper around the real openai SDK's image generation endpoint."""
+    """Thin wrapper around the openai SDK's image generation endpoint.
+    Honors an optional OpenAI-compatible base_url (e.g. LocalAI's
+    /v1/images/generations) so the DALL-E stage can run against a local
+    server providing the same payload shape."""
 
-    def __init__(self, api_key: str | None = None):
+    def __init__(self, api_key: str | None = None, base_url: str | None = None):
         self._api_key = api_key or settings.openai_api_key
+        # "" (empty env value from .env.template) must coerce to None so the
+        # SDK falls back to real OpenAI rather than receiving an empty base_url.
+        self._base_url = (base_url if base_url is not None else settings.image_base_url) or None
         self._client = None
 
     def _get_client(self):
         if self._client is None:
             from openai import OpenAI
-            self._client = OpenAI(api_key=self._api_key)
+            self._client = OpenAI(api_key=self._api_key, base_url=self._base_url)
         return self._client
 
     def generate_image(self, *, model: str, prompt: str, size: str) -> bytes:

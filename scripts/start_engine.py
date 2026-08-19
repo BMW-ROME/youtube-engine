@@ -96,14 +96,15 @@ def run_all_channels() -> None:
 
 
 def run_dashboard_only() -> None:
+    from config.settings import settings
     try:
+        import uvicorn
         from dashboard.app import app
     except ImportError as exc:
         logger.error("Dashboard not available: %s", exc)
         sys.exit(1)
-    from config.settings import settings
     logger.info("Starting dashboard at http://%s:%d", settings.dashboard_host, settings.dashboard_port)
-    app.run(host=settings.dashboard_host, port=settings.dashboard_port)
+    uvicorn.run(app, host=settings.dashboard_host, port=settings.dashboard_port)
 
 
 def run_setup_diagnostics() -> None:

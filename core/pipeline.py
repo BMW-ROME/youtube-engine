@@ -211,16 +211,17 @@ def run_pipeline(
     if result.script is not None:
         try:
             from core.seo_optimizer import optimize_seo
-            seo_client = clients.get("seo_chat_client")
-            if seo_client is not None:
-                result.seo_result = _run_stage(
-                    "seo", result, optimize_seo,
-                    client=seo_client, channel=channel,
-                    script=result.script.to_dict(),
-                    chapter_markers=result.chapter_markers,
-                )
-            else:
-                logger.info("[pipeline] No seo_chat_client provided - skipping SEO stage.")
+            from core.script_writer import OpenAIChatClient
+            # Real runs use the same shared OpenAI-compatible chat client as
+            # script_writer. SEO metadata is required before upload (stage 10 is
+            # gated on seo_result), so it must never be silently skipped.
+            seo_client = clients.get("seo_chat_client") or OpenAIChatClient()
+            result.seo_result = _run_stage(
+                "seo", result, optimize_seo,
+                client=seo_client, channel=channel,
+                script=result.script.to_dict(),
+                chapter_markers=result.chapter_markers,
+            )
         except ImportError as exc:
             logger.error("seo_optimizer module unavailable: %s", exc)
             result.failed_stages.append("seo")

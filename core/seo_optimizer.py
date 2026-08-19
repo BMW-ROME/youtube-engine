@@ -40,12 +40,16 @@ import logging
 from dataclasses import dataclass, field
 from typing import List, Optional, Protocol
 
+from config.settings import settings
+
 logger = logging.getLogger(__name__)
 
 MAX_TITLE_CHARS = 60
 MAX_TAGS_CHARS = 500
 MAX_RETRIES = 3
-MODEL = "gpt-4o"
+# Model used for chat completions. Overridable via LLM_MODEL so local
+# OpenAI-compatible backends (Ollama) can send a model name they actually host.
+MODEL = settings.llm_model
 
 
 class SEOGenerationError(Exception):

@@ -22,6 +22,7 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+.vs/
 
 # Project runtime data
 output/
@@ -29,6 +30,10 @@ output/
 *.sqlite3
 assets/music/*.mp3
 assets/generated/
+run_history.jsonl
+
+# Brand sync cache (marketing-ops import)
+config/.brand_cache/
 
 # Credentials / secrets
 *.pem

@@ -1,0 +1,42 @@
+services:
+  orchestrator:
+    build: .
+    container_name: youtube-engine-scheduler
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - CONTENT_DIR=/app/output
+      - RUN_HISTORY_PATH=/app/run_history.jsonl
+    volumes:
+      - ./output:/app/output
+      - ./run_history.jsonl:/app/run_history.jsonl
+      # Mount your Chatterbox reference clip (if used) and set
+      # CHATTERBOX_VOICE_SAMPLE_PATH in .env:
+      # - ./voice_samples:/app/voice_samples
+    command: ["python", "-m", "core.orchestrator"]
+    # Per-channel cron (APScheduler) + 2 AM replenishment + failed retry + report.
+
+  dashboard:
+    build: .
+    container_name: youtube-engine-dashboard
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - CONTENT_DIR=/app/output
+      - RUN_HISTORY_PATH=/app/run_history.jsonl
+      - DASHBOARD_HOST=0.0.0.0
+      - DASHBOARD_PORT=8000
+    volumes:
+      - ./output:/app/output
+      - ./run_history.jsonl:/app/run_history.jsonl
+    ports:
+      - "${DASHBOARD_PORT:-8000}:8000"
+    command: ["python", "dashboard/app.py"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - orchestrator

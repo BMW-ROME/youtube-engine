@@ -21,13 +21,14 @@ DALL-E credits:
 
 Prerequisites:
     - Ollama running locally (`ollama serve`) with a model pulled that
-      supports JSON mode reasonably well, e.g.:
-          ollama pull llama3.1
+      supports JSON mode reasonably well (qwen2.5-coder:3B is proven to
+      satisfy the strict script/SEO schema), e.g.:
+          ollama pull qwen2.5-coder:3B
     - requests installed (already a project dependency)
 
 Usage:
-    python scripts/test_free_real_apis.py --model llama3.1
-    python scripts/test_free_real_apis.py --model llama3.1 --ollama-url http://localhost:11434
+    python scripts/test_free_real_apis.py --model qwen2.5-coder:3B
+    python scripts/test_free_real_apis.py --model qwen2.5-coder:3B --ollama-url http://localhost:11434
 
 This costs nothing and never touches OPENAI_API_KEY.
 """
@@ -37,6 +38,14 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from pathlib import Path
+
+# Ensure the repo root (parent of scripts/) is importable as `core`/`config`
+# when this file is run directly (python scripts/test_free_real_apis.py) --
+# Python only auto-adds the SCRIPT'S OWN directory to sys.path, not its
+# parent, so without this, `from core.script_writer import ...` fails with
+# ModuleNotFoundError no matter what directory you run this from.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
 class OllamaChatClient:
@@ -181,10 +190,16 @@ def test_image_gen() -> None:
 
 def main():
     parser = argparse.ArgumentParser(description="Free real-API smoke test using local Ollama.")
-    parser.add_argument("--model", default="llama3.1", help="Ollama model name (must be pulled already)")
+    parser.add_argument("--model", default="qwen2.5-coder:3B", help="Ollama model name (must be pulled already; qwen2.5-coder:3B is proven to satisfy the strict script/SEO JSON schema)")
     parser.add_argument("--ollama-url", default="http://localhost:11434", help="Ollama server URL")
     parser.add_argument("--skip-llm", action="store_true", help="Skip Ollama tests, run only image_gen test")
     args = parser.parse_args()
+
+    # The stages send settings.llm_model (default gpt-4o). Ollama rejects a
+    # model name it doesn't host, so --model must be surfaced through LLM_MODEL
+    # BEFORE config.settings.Settings() is first instantiated by the stages.
+    import os
+    os.environ["LLM_MODEL"] = args.model
 
     print("This test costs $0.00 -- no OPENAI_API_KEY or paid API is used.\n")
 

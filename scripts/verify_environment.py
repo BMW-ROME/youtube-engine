@@ -26,10 +26,14 @@ REQUIRED_BINARIES = ["ffmpeg", "ffprobe"]
 REQUIRED_PY_PACKAGES = ["openai", "pydantic", "pydantic_settings", "dotenv"]
 OPTIONAL_PY_PACKAGES = [
     ("edge_tts", "Edge-TTS voice synthesis (free tier for 6/7 channels)"),
-    ("elevenlabs", "ElevenLabs voice cloning (Thee3lite Speaks channel)"),
+    ("chatterbox", "Chatterbox local voice cloning (Thee3lite Speaks channel) + torch"),
+    ("fastapi", "FastAPI dashboard server (dashboard/app.py)"),
+    ("uvicorn", "ASGI server for the FastAPI dashboard"),
     ("PIL", "Pillow - thumbnail text overlay, image placeholders"),
     ("replicate", "Replicate - animated/ai_video effect modes"),
     ("googleapiclient", "YouTube Data API v3 uploads (UPLOAD_MODE=youtube_api)"),
+    ("feedparser", "RSS topic discovery (core/trend_engine.py)"),
+    ("apscheduler", "per-channel cron scheduling (core/orchestrator.py)"),
     ("requests", "marketing-ops brand sync (config/brand_loader.py)"),
     ("yaml", "marketing-ops brand sync (config/brand_loader.py)"),
 ]
@@ -73,6 +77,31 @@ def check_env_var(name: str, required: bool = True) -> bool:
     return False
 
 
+def probe_base_url(name: str, env_var: str, default_target: str) -> None:
+    """Performs a read-only reachability probe against an OpenAI-compatible
+    base URL. Never fails the run -- these are informational only."""
+    base = os.environ.get(env_var)
+    if not base:
+        print(f"  [note] {name}: {default_target} (default; set {env_var} for a local backend)")
+        return
+
+    import urllib.request
+    url = base.rstrip("/") + "/models"
+    print(f"  [probe] {name}: {base}")
+    try:
+        with urllib.request.urlopen(url, timeout=3) as resp:
+            body = resp.read(1000)
+            count = body.count(b'"id"')
+            print(f"  [OK]   {name} reachable ({count} model(s) advertised)")
+    except Exception as exc:
+        print(f"  [ALERT] {name} configured ({base}) but NOT reachable: {exc}")
+
+    model_env = "LLM_MODEL" if env_var == "OPENAI_BASE_URL" else "IMAGE_MODEL"
+    model = os.environ.get(model_env)
+    if model:
+        print(f"         stage will request {model_env}={model}")
+
+
 print("=" * 60)
 print("1. Required system binaries (video assembly, effects, shorts)")
 print("=" * 60)
@@ -105,9 +134,16 @@ print("=" * 60)
 print("4. Environment variables")
 print("=" * 60)
 check_env_var("OPENAI_API_KEY", required=True)
-check_env_var("ELEVENLABS_API_KEY", required=False)
+check_env_var("CHATTERBOX_VOICE_SAMPLE_PATH", required=False)
 check_env_var("GITHUB_TOKEN", required=False)
 check_env_var("UPLOAD_MODE", required=False)
+
+print()
+print("=" * 60)
+print("5. AI Backend (local probes, informational only - never fails the run)")
+print("=" * 60)
+probe_base_url("Chat backend (script + SEO)", "OPENAI_BASE_URL", "OpenAI")
+probe_base_url("Image backend (DALL-E stage)", "IMAGE_BASE_URL", "OpenAI DALL-E")
 
 print()
 print("=" * 60)

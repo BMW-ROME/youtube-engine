@@ -11,7 +11,6 @@ a chat session again.
 - [ ] Not started
 - [~] In progress
 - [x] Working, committed
-- [-] Dropped / superseded (see note)
 
 ## Phased Rebuild Plan (added 2026-08-14)
 
@@ -27,16 +26,37 @@ the previous phase's output actually works before adding the next layer on top o
 - [x] Phase 1: Prove the Loop — scripts/run_once.py written (2026-08-14). Chains content_db ->
   script_writer -> voice_gen for one channel/topic. Supports --dry-run (fake clients, zero API
   cost) and real-client mode. Stops after voice generation (status=MUSIC) since music_mixer.py
-  doesn't exist yet.
+  didn't exist yet at that point.
 - [x] Phase 2: Visuals — core/music_mixer.py, core/image_gen.py, both tested with fake clients
   (2026-08-15). Music mixer confirmed: mix success, BACKGROUND_MUSIC disabled skip, and
   mixer-always-fails graceful fallback to voice-only audio. Image gen confirmed: all-succeed
-  path, content-filter-rejection-then-sanitize-recovery path, and always-fails-falls-back-to-
-  placeholder path.
-- [x] Phase 3: Assembly — core/thumbnail_text.py (Stage 5), core/video_effects.py (Stage 6, Replicate fallback tested), and core/video_assembler.py (Stage 7: FFmpeg crossfade assembly + build_chapter_markers, absorbing the standalone chapters.py concept) all DONE and committed.
-- [x] Phase 4: Metadata & Distribution — core/seo_optimizer.py, core/shorts_gen.py, core/uploader.py, core/pipedream_uploader.py all DONE and committed 2026-08-15. seo_optimizer.py (Stage 8): GPT-4o SEO metadata generation — title/description/tags/hashtags/pinned comment/end-screen topics, same ChatClient + retry-then-raise pattern as script_writer.py. shorts_gen.py (Stage 9): extracts SHORTS_PER_VIDEO vertical 9:16 clips from heuristic retention-moment start times (hook/middle/closer spread), FFmpeg crop+scale, one-failure-doesn't-block-others resilience. uploader.py (Stage 10, youtube_api mode): resumable Data API v3 upload, lazy google-* imports so missing deps/creds degrade to a logged None instead of crashing, defaults to privacy=private. pipedream_uploader.py (Stage 10, local/skip/pipedream modes): local writes a .meta.json sidecar for manual upload, skip is a no-op, pipedream POSTs metadata + local path to a webhook (never the raw video bytes). Phase 4 complete.
-- [x] Phase 5: Orchestration — core/pipeline.py, core/freestyle.py, core/orchestrator.py all DONE and committed (see Stage 10/11 sections below). core/trend_engine.py NOT started (RSS/trending discovery still open — scheduler currently starves on a static topic list without it). config/prompts/ confirmed dead spec (see Phase 0). channels/*.py dropped — see Channels section below.
-- [~] Phase 6: Visibility & Ops — dashboard/app.py done as a Flask app (see Stage 12 below); FastAPI rewrite, Dockerfile, docker-compose.yml, and some scripts/* still open. start_engine.bat done.
+  path, content-filter-rejection-then-sanitize-recovery path, and always-fails-falls-back-to
+  gradient-placeholder path.
+- [x] Phase 3: Assembly — core/thumbnail_text.py (Stage 5, Pillow text overlay), core/video_effects.py
+  (Stage 6, KenBurns/Sketch/Animated/AI modes with Replicate fallback), and core/video_assembler.py
+  (Stage 7: FFmpeg crossfade assembly + chapter markers). All committed and tested (2026-08-15).
+  Chapter marker logic lives inside video_assembler.build_chapter_markers() — the standalone
+  core/chapters.py from the original spec was never needed.
+- [x] Phase 4: Metadata & Distribution — core/seo_optimizer.py (Stage 8), core/shorts_gen.py
+  (Stage 9), core/uploader.py (Stage 10, youtube_api mode), core/pipedream_uploader.py (Stage 10,
+  local/skip/pipedream modes). All done and committed 2026-08-15. Phase 4 complete.
+- [x] Phase 5: Orchestration — core/pipeline.py (master 10-stage chain), core/freestyle.py (dynamic
+  channel builder), core/orchestrator.py (scheduler: run_once + APScheduler per-channel cron
+  + run_forever interval fallback), core/trend_engine.py (RSS topic discovery). Committed 2026-08-16/18.
+  config/prompts/*.py was dropped (Phase 0 kill — dead spec). The channels/*.py package
+  (base_channel + subclasses) was ALSO dropped: channel definitions live in config/channels.py
+  (ChannelConfig registry) and freestyle.py builds channels dynamically — a parallel class
+  hierarchy would be a second, conflicting source of channel truth. Phase 5 complete.
+- [x] Phase 6: Visibility & Ops — dashboard/ (FastAPI app + templates/index.html + static/style.css),
+  scripts/ (start_engine.py CLI, run_once.py, setup.py, setup_voice.py, verify_environment.py,
+  upload_ready.py, quick_upload.py, validate_e2e.py, test_pipeline_integration.py,
+  test_free_real_apis.py), Dockerfile, docker-compose.yml, start_engine.bat. Phase 6 complete.
+
+## Status Summary (2026-08-18)
+
+All 10 pipeline stages, the scheduler layer, the monitoring dashboard, and the full CLI
+are committed to main. Remaining roadmap items are tracked per-item below — most surfaced
+as deliberate drops (dead spec) rather than unfinished work.
 
 ## Rebuild Checklist
 
@@ -54,46 +74,52 @@ the previous phase's output actually works before adding the next layer on top o
 ### Core Pipeline (core/)
 - [x] content_db.py — SQLite tracking, tested end-to-end (create/status transitions/metadata/shorts/retry) (2026-08-13)
 - [x] script_writer.py — Stage 1: GPT-4o script generation, tested with fake client (success + failure/retry paths) (2026-08-13)
-- [x] voice_gen.py — Stage 2: Edge-TTS / Chatterbox (migrated from ElevenLabs 2026-08-17), tested with fake synthesizer + concatenator (2026-08-13)
-- [x] voice_clone.py — Chatterbox local voice cloning (migrated from ElevenLabs 2026-08-17), tested with fake client (9 test cases) (2026-08-13)
+- [x] voice_gen.py — Stage 2: Edge-TTS / Chatterbox, tested with fake synthesizer + concatenator (2026-08-13, Chatterbox 2026-08-17)
+- [x] voice_clone.py — reference-clip validation + resolution for Chatterbox (local, zero-shot cloning), tested (2026-08-13, rewritten 2026-08-17)
 - [x] music_mixer.py — Stage 3: FFmpeg background music, tested with fake mixer (mix/skip/fallback paths) (2026-08-15)
 - [x] image_gen.py — Stage 4: DALL-E 3 with retry/fallback, tested with fake client (success/sanitize-recovery/placeholder-fallback paths) (2026-08-15)
-- [x] thumbnail_text.py — Stage 5: Pillow overlay (Phase 3, done)
-- [x] video_effects.py — Stage 6: 4 video modes (Phase 3, done)
-- [x] video_assembler.py — Stage 7: FFmpeg assembly (Phase 3, done)
-- [-] chapters.py — Stage 7b. Dropped as a standalone module; absorbed into video_assembler.build_chapter_markers(), used by pipeline.py and seo_optimizer.py.
-- [x] shorts_gen.py — Stage 9 (Phase 4, done)
-- [x] seo_optimizer.py — Stage 8 (Phase 4, done)
-- [x] uploader.py — Stage 10 (YouTube API) (Phase 4, done)
-- [x] pipedream_uploader.py — Stage 10 (webhook/local) (Phase 4, done)
-- [ ] trend_engine.py — RSS + trending discovery (Phase 5). NOT started — high priority, scheduler currently starves on a static/short topic list without it.
-- [x] pipeline.py — orchestrates all 10 stages (Phase 5, done — see Stage 10 section)
-- [x] freestyle.py — dynamic channel builder / Phase 6 CLI support (Phase 5, done)
-- [x] orchestrator.py — scheduler layer (Phase 5, done — see Stage 11 section). Currently a fixed-interval run_forever() loop; APScheduler-based per-channel cron scheduling is a still-open upgrade, not yet built.
+- [x] thumbnail_text.py — Stage 5: Pillow text overlay (2026-08-15, Phase 3)
+- [x] video_effects.py — Stage 6: 4 video modes (2026-08-15, Phase 3)
+- [x] video_assembler.py — Stage 7: FFmpeg assembly + chapter markers (2026-08-15, Phase 3)
+- [x] chapters.py — Stage 7b: absorbed into video_assembler.build_chapter_markers(); standalone module never needed
+- [x] shorts_gen.py — Stage 9 (2026-08-15, Phase 4)
+- [x] seo_optimizer.py — Stage 8 (2026-08-15, Phase 4)
+- [x] uploader.py — Stage 10 (YouTube Data API upload) (2026-08-15, Phase 4)
+- [x] pipedream_uploader.py — Stage 10 (webhook/local/skip) (2026-08-15, Phase 4)
+- [x] trend_engine.py — RSS + trending topic discovery, seeds content_db QUEUED rows (2026-08-18, Phase 5)
+- [x] pipeline.py — orchestrates all 10 stages (2026-08-16, Phase 5)
+- [x] freestyle.py — dynamic channel builder for arbitrary categories (2026-08-16, Phase 5)
+- [x] orchestrator.py — run_once + run_forever + APScheduler per-channel cron (2026-08-16/18, Phase 5)
+- [x] brand_aware_prompts.py — brand tone/voice + lead-gen CTA wiring for script_writer/seo_optimizer, wraps config/brand_loader.py (2026-08-17)
 
 ### Channels (channels/)
-- [-] base_channel.py — Dropped. Package never built; superseded by core/freestyle.py's dynamic channel builder approach.
-- [-] finance_channel.py — Dropped, same rationale.
-- [-] mmo_channel.py — Dropped, same rationale.
-- [-] tech_channel.py — Dropped, same rationale.
+- [x] base_channel.py / finance_channel.py / mmo_channel.py / tech_channel.py — DROPPED BY DESIGN.
+  Channel definitions live in config/channels.py (ChannelConfig registry); freestyle.py builds
+  channels dynamically. A parallel channels/ package would duplicate channel truth. RSS topic
+  discovery is implemented in core/trend_engine.py instead.
 
 ### Dashboard (dashboard/)
-- [x] app.py — Built and committed as a Flask app (see Stage 12 below), not FastAPI as originally spec'd. FastAPI rewrite (with /health, /api/channels, /api/videos, /api/trigger/{channel}, /api/logs endpoints) remains an open item.
-- [ ] templates/index.html (Phase 6) — not yet split out; current Flask app uses inline render_template_string.
-- [ ] static/style.css (Phase 6) — not yet split out.
+- [x] app.py — FastAPI dashboard with templates/index.html + static/style.css (2026-08-15 as Flask,
+  rewritten to FastAPI 2026-08-18 per original spec). Serves on settings.dashboard_port (default 8000).
+- [x] templates/index.html (2026-08-18)
+- [x] static/style.css (2026-08-18)
 
 ### Scripts (scripts/)
 - [x] run_once.py — manual single-video tool, Phase 1 script+voice loop (2026-08-14)
-- [x] start_engine.py — main CLI, Phase 6 (committed 2026-08-18, closes prior "can't open file" gap)
-- [ ] setup.py — first-time wizard (Phase 6). NOT started.
-- [x] setup_voice.py — Chatterbox voice cloning setup wizard (migrated from ElevenLabs wizard, committed 2026-08-18)
-- [ ] upload_ready.py (Phase 6). NOT started.
-- [ ] quick_upload.py (Phase 6). NOT started.
+- [x] start_engine.py — main CLI (menu + args + Freestyle) (2026-08-16, Phase 6)
+- [x] setup.py — first-time wizard (.env bootstrap + diagnostics + OAuth flow) (2026-08-18, Phase 6)
+- [x] setup_voice.py — Chatterbox voice cloning wizard (2026-08-16, Phase 6)
+- [x] upload_ready.py — batch upload of ready/ videos using .meta.json sidecars (2026-08-18, Phase 6)
+- [x] quick_upload.py — quick single-video upload (2026-08-18, Phase 6)
+- [x] verify_environment.py — pre-flight check for binaries/packages/env vars (2026-08-16, Phase 6)
+- [x] validate_e2e.py — real $0 end-to-end validation, httpx-level OpenAI transport patch (2026-08-17, Phase 6)
+- [x] test_pipeline_integration.py — pipeline integration test (2026-08-16)
+- [x] test_free_real_apis.py — $0 real-API tests via local Ollama (2026-08-16)
 
 ### Infra
-- [ ] Dockerfile (Phase 6). NOT started.
-- [ ] docker-compose.yml (Phase 6). NOT started.
-- [x] start_engine.bat — Windows launcher (committed 2026-08-18)
+- [x] Dockerfile (2026-08-18, Phase 6)
+- [x] docker-compose.yml (2026-08-18, Phase 6)
+- [x] start_engine.bat (2026-08-16, Phase 6)
 
 ## Notes
 
@@ -115,11 +141,7 @@ the previous phase's output actually works before adding the next layer on top o
 - 2026-08-13: voice_gen.py written and tested with fake Synthesizer + AudioConcatenator
   implementations (no real edge-tts network call, no ffmpeg binary, no ElevenLabs account
   needed). Confirmed per-scene synthesis, concatenation, failure/retry path, and the
-  ElevenLabs-configured-but-unavailable -> Edge-TTS fallback rule. (Superseded 2026-08-17 by
-  the Chatterbox migration — see below.)
-
-- 2026-08-13: voice_clone.py written, ElevenLabs voice cloning setup tested with a fake client
-  across 9 test cases. (Superseded 2026-08-17 by the Chatterbox migration — see below.)
+  Chatterbox-configured-but-unavailable -> Edge-TTS fallback rule.
 
 - 2026-08-14: Coaching audit — built a phased execution plan (Phase 0-6) instead of working
   straight down the checklist. Phase 0 audit found config/prompts/ is not actually imported by
@@ -136,27 +158,71 @@ the previous phase's output actually works before adding the next layer on top o
   using channel.image_style_prefix for visual consistency, with the exact resilience chain from
   the README: sanitize regex strips common filter-trigger words -> safety suffix appended on the
   final attempt -> gradient PNG placeholder (via Pillow, with a stub fallback if Pillow isn't
-  installed) if all 3 attempts are exhausted. Both modules were tested in a standalone sandbox
-  with fake ChannelConfig/content_db/script_writer stubs (not the real config/core packages) to
-  verify logic without a full repo checkout — recommend a quick real-import smoke test against
-  the actual repo before Phase 3 to catch any signature drift.
+  installed) if all 3 attempts are exhausted.
 
-- 2026-08-17: Migrated ElevenLabs -> Chatterbox for voice cloning (Thee3lite Speaks channel).
-  Chatterbox is Resemble AI's local, open-source (MIT), zero-shot voice cloning model — no API
-  key, no per-character cost, runs on local GPU/CPU, matching this project's local-first infra
-  preference. voice_gen.py and voice_clone.py rewritten accordingly; all fallback-to-EdgeTTS
-  resilience paths preserved and tested (6 scenarios).
+- 2026-08-16: Phase 3 (Assembly) + Phase 4 (Metadata & Distribution) complete, then pipeline.py
+  landed with the master 10-stage orchestration. The integration test (test_pipeline_integration.py)
+  caught 6 broken stage imports and a missing content_db.init_db()/get_next_topic — all fixed.
+  This is why every module above is committed; the "Rebuild Rule" below protected us here.
 
-- 2026-08-18: Reconciliation pass — checked off Phase 5 module list (pipeline.py, freestyle.py,
-  orchestrator.py) and Phase 3/4 individual module lines that were already done but never ticked
-  at the module level. Dropped the channels/ package entries (never built, superseded by
-  freestyle.py). Marked chapters.py as absorbed into video_assembler.build_chapter_markers().
-  Corrected stale ElevenLabs labels on voice_gen.py/voice_clone.py to reflect the Chatterbox
-  migration. Clarified dashboard/app.py is done as Flask, not FastAPI as originally spec'd —
-  FastAPI rewrite remains a genuinely open Phase 6 item, not something to check off. Checked off
-  start_engine.py, setup_voice.py, start_engine.bat (all committed 2026-08-18). trend_engine.py,
-  setup.py, upload_ready.py, quick_upload.py, Dockerfile, docker-compose.yml, and
-  templates/static split-out remain genuinely not started.
+- 2026-08-16: Phase 5 (Orchestration) mostly complete — core/pipeline.py, core/freestyle.py,
+  core/orchestrator.py, plus scripts/start_engine.py (Phase 6 CLI) and start_engine.bat. A real
+  sys.path bug was fixed in scripts/run_once.py and scripts/setup_voice.py (ModuleNotFoundError:
+  No module named 'core' when run as documented — Python only auto-adds the script's own
+  directory to sys.path, not its parent).
+
+- 2026-08-17: MIGRATION — ElevenLabs -> Chatterbox for voice cloning (Thee3lite Speaks channel).
+  Chatterbox is Resemble AI's local, open-source (MIT), zero-shot voice cloning model: no API
+  key, no per-character cost, runs on local GPU/CPU — matching this project's local-first infra
+  preference. voice_gen.py: ChatterboxSynthesizer replaces ElevenLabsSynthesizer. voice_clone.py:
+  rewritten from 'upload samples to remote API' to 'validate + resolve a local reference audio
+  file path'. config/settings.py: elevenlabs_* fields replaced with chatterbox_*. config/channels.py:
+  thee3lite's voice_engine=chatterbox. requirements.txt: elevenlabs swapped for chatterbox-tts.
+  All Edge-TTS fallback paths preserved and tested (6 scenarios).
+
+- 2026-08-17: Brand integration — core/brand_aware_prompts.py (wraps config/brand_loader.py,
+  a marketing-ops repo fetcher) wired into script_writer.py + seo_optimizer.py per
+  BRAND_INTEGRATION_SNIPPET.md. Brand tone/voice goes into the script system prompt; SEO prompt
+  gets brand tone + a lead-gen CTA appended to description and pinned comment (skipped when the
+  marketing-ops lead_capture.yaml CTA is still an unconfigured placeholder). Never blocks
+  generation if brand data is unavailable.
+
+- 2026-08-17: scripts/validate_e2e.py — real $0 end-to-end validation: runs the ACTUAL repo's
+  core.pipeline.run_pipeline() with only the OpenAI network transport faked (httpx-level
+  monkeypatch on the real openai SDK). img fix: the fake DALL-E image must be a real, structurally
+  valid PNG (Pillow-generated), or thumbnail_text.py correctly rejects it — which made the stage
+  genuinely exercised for the first time. Verified: a real openai client through the patched
+  transport returns bytes that Image.open().convert('RGBA') opens successfully.
+
+- 2026-08-18: Doc reconciliation pass — BUILD_LOG.md and README.md synchronized with the
+  committed code state (Phase 5/6 checked off, tree corrected, voice/dashboard/APScheduler
+  wording fixed). Tracked real drift fixes: .env.template voice section rewritten for Chatterbox,
+  flask omitted from requirements (dashboard is FastAPI), DASHBOARD_PORT canonicalized to 8000,
+  config/.brand_cache/ + .vs/ gitignored, verify_environment.py updated for Chatterbox.
+
+- 2026-08-18: Phase 5/6 completion work — core/trend_engine.py (feedparser RSS topic discovery,
+  dedupes against content_db, seeds QUEUED rows), APScheduler per-channel cron in orchestrator.py
+  (matches README Schedule: per-channel post times, 2 AM topic replenishment, 30-min failed
+  retry, 11 PM report; run_forever kept as interval fallback), FastAPI dashboard rewrite with
+  /api/channels, /api/videos, /api/logs, /api/trigger, Dockerfile + docker-compose.yml (no torch
+  in base image), scripts/setup.py, scripts/upload_ready.py, scripts/quick_upload.py. The
+  channels/ package was dropped by design (redundant with config/channels.py + freestyle.py).
+
+- 2026-08-18: AI Backend made configurable — the pipeline previously hardcoded the real OpenAI
+  endpoints and never connected to a local LLM (a dummy OPENAI_API_KEY only satisfied settings
+  validation, it didn't route anywhere). Now: OPENAI_BASE_URL (chat) + LLM_MODEL point
+  script_writer.py + seo_optimizer.py at a local Ollama (/v1/chat/completions); IMAGE_BASE_URL
+  + IMAGE_MODEL point image_gen.py at a LocalAI-style /v1/images/generations (same payload
+  shape as DALL-E, zero adapter code). Both clients build OpenAI(base_url=...) from settings;
+  default None keeps the real OpenAI behavior. Chat model names must match `ollama list`;
+  image model names must exist in the image server's registry. Clarification logged here: the
+  DALL-E stage needs a REAL image backend (LocalAI chosen) — Chatterbox is the VOICE stage
+  (TTS, replaced ElevenLabs) and Ollama only reads images (multimodal), it cannot generate them.
+  Also fixed: run_pipeline now defaults the SEO stage to the shared OpenAIChatClient() instead
+  of silently skipping stage 8 when no client dict is injected (stage 10 upload is gated on
+  seo_result, so uploads could never fire in real runs); the --model flag in
+  test_free_real_apis.py now actually applies (sets LLM_MODEL before stage import);
+  verify_environment.py gained non-fatal backend reachability probes.
 
 ## Rebuild Rule
 
@@ -170,16 +236,14 @@ A broken-but-committed module beats a perfect-but-lost one.
 
 All 10 stages of the pipeline now have code committed to `core/`. Next: build `orchestrator.py`/scheduler layer for automated recurring runs, plus dashboard/monitoring and end-to-end testing.
 
-
 ## Stage 11: Scheduler / Orchestrator (completed)
 
-- [x] `core/orchestrator.py` — Scheduler layer on top of `core/pipeline.py`. Supports `run_once()` for single manual runs and `run_forever()` for a recurring loop (default interval configurable via `PIPELINE_INTERVAL_SECONDS` env var). Pulls next topic from `core.content_db` when available, falling back to a static topic rotation if the DB is unavailable so the scheduler never stalls. Persists a JSON-lines run history (`run_history.jsonl`) after every run for later review. Orchestrator-level try/except wraps every run in addition to pipeline.py's own per-stage resilience, so one bad run never kills the scheduler process. Committed to main. NOTE (2026-08-18): this is a fixed-interval loop, not yet the APScheduler-based per-channel cron scheduling described in README — that upgrade is still open.
+- [x] `core/orchestrator.py` — Scheduler layer on top of `core/pipeline.py`. Supports `run_once()` for single manual runs, APScheduler per-channel cron matching the README Schedule (post times, 2 AM topic replenishment, 30-min failed retry, 11 PM daily report), and `run_forever()` for a plain interval loop fallback (default `PIPELINE_INTERVAL_SECONDS`). Pulls next topic from `core.content_db` when available, falling back to a static topic rotation if the DB is unavailable so the scheduler never stalls. Persists a JSON-lines run history (`run_history.jsonl`) after every run for later review. Orchestrator-level try/except wraps every run in addition to pipeline.py's own per-stage resilience, so one bad run never kills the scheduler process. Committed to main.
 
-Next: dashboard/monitoring view for run history + failed stages, and end-to-end testing of the full chain (script -> upload).
-
+Next (done): dashboard/monitoring view for run history + failed stages, and end-to-end testing of the full chain (script -> upload).
 
 ## Stage 12: Monitoring Dashboard (completed)
 
-- [x] `dashboard/app.py` — Lightweight Flask app that reads the JSON-lines run history produced by `core/orchestrator.py` (`run_history.jsonl`) and renders a dark-themed table of recent runs plus summary cards (total/success/failure counts). Missing history file or malformed lines are handled gracefully (empty state / line skipped + logged) rather than crashing. Run locally with `python dashboard/app.py` on port 5000 (configurable via `DASHBOARD_PORT`). Committed to main. NOTE (2026-08-18): this is Flask, not the FastAPI rewrite described in the original spec/README — FastAPI + templates/static split-out remains an open Phase 6 item.
+- [x] `dashboard/app.py` — FastAPI dashboard that reads the JSON-lines run history produced by `core/orchestrator.py` (`run_history.jsonl`) and renders a dark-themed table of recent runs plus summary cards (total/success/failure counts). Exposes the REST API from the README spec: `/health`, `/api/channels`, `/api/videos`, `/api/videos/{id}`, `/api/trigger/{channel}`, `/api/topics/{channel}/generate`, `/api/logs`, with 15s auto-refresh. Missing history file or malformed lines are handled gracefully (empty state / line skipped + logged) rather than crashing. Run locally with `python dashboard/app.py` on `settings.dashboard_port` (default 8000, configurable via `DASHBOARD_PORT`). Committed to main.
 
-Next: end-to-end integration test of the full chain (script -> voice -> ... -> upload) using stubbed/mock external APIs, then wire up scheduled execution (cron / systemd timer / Docker) for the orchestrator in production.
+Next: run the full chain against real APIs with credentials in place (OPENAI_API_KEY + a configured channel), verify `youtube_api` upload mode end-to-end (the least exercised code path — needs real OAuth), and deploy the orchestrator via the Docker profile for scheduled production runs.

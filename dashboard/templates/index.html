@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YouTube Engine Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>YouTube Engine — Pipeline Dashboard</h1>
+    <span class="refresh-note">Auto-refresh every 15s</span>
+  </header>
+
+  <section class="summary" id="summary">
+    <div class="card"><div class="num" id="total">–</div>Total runs</div>
+    <div class="card"><div class="num ok" id="successes">–</div>Successful</div>
+    <div class="card"><div class="num fail" id="failures">–</div>Failed</div>
+  </section>
+
+  <h2>Recent runs</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>Channel</th>
+        <th>Topic</th>
+        <th>Status</th>
+        <th>Failed Stages</th>
+      </tr>
+    </thead>
+    <tbody id="runs-body">
+      <tr><td colspan="5" class="muted">Loading…</td></tr>
+    </tbody>
+  </table>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

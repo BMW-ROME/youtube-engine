@@ -21,6 +21,22 @@ class Settings(BaseSettings):
     # ===== REQUIRED =====
     openai_api_key: str = Field(..., alias="OPENAI_API_KEY")
 
+    # ===== AI Backend (local-LLM support) =====
+    # OPENAI_BASE_URL points the CHAT stages (script_writer.py, seo_optimizer.py)
+    # at an OpenAI-compatible endpoint. Leave blank/unset for real OpenAI; set to
+    # http://localhost:11434/v1 for a local Ollama server. Ollama ignores the
+    # Authorization header, so OPENAI_API_KEY can be any non-empty string there.
+    openai_base_url: str | None = Field(default=None, alias="OPENAI_BASE_URL")
+    # IMAGE_BASE_URL points the IMAGE stage (image_gen.py) at an OpenAI-compatible
+    # image server, e.g. LocalAI (http://localhost:8080/v1), whose /v1/images/generations
+    # endpoint accepts the same payload shape as DALL-E. Leave blank for real DALL-E.
+    image_base_url: str | None = Field(default=None, alias="IMAGE_BASE_URL")
+    # Model names sent to the chat/image backends. For local servers these MUST match
+    # a model the server actually hosts (e.g. `ollama list` for Ollama, the LocalAI
+    # model registry for images).
+    llm_model: str = Field(default="gpt-4o", alias="LLM_MODEL")
+    image_model: str = Field(default="dall-e-3", alias="IMAGE_MODEL")
+
     # ===== Voice Cloning (Chatterbox) =====
     # MIGRATION (2026-08-17): replaced ElevenLabs with Resemble AI's
     # Chatterbox TTS - local, open-source (MIT), zero-shot voice cloning
