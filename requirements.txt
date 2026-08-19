@@ -1,6 +1,12 @@
-openai>=1.40.0
+# openai 3.x is required: openai 1.x (<1.59) passes `proxies` to its internal
+# httpx client, which httpx>=0.28 removed (TypeError: Client.__init__() got an
+# unexpected keyword argument 'proxies'). The pinned pair is the tested matrix.
+# NOTE: `openai[aiohttp]` (not `openai`) is required -- openai 3.x eagerly imports
+# aiohttp.SocketTimeoutError at import time but only declares aiohttp>=3.14.1 as an
+# optional extra; without it `import openai` crashes on any aiohttp < 3.14.1.
+openai[aiohttp]>=3,<4
+httpx>=0.28,<1
 edge-tts>=6.1.0
-chatterbox-tts
 pillow>=10.0.0
 apscheduler>=3.10.0
 fastapi>=0.110.0
@@ -8,7 +14,6 @@ uvicorn>=0.29.0
 pydantic>=2.6.0
 pydantic-settings>=2.2.0
 python-dotenv>=1.0.0
-httpx>=0.27.0
 requests>=2.31.0
 feedparser>=6.0.0
 
@@ -17,5 +22,9 @@ feedparser>=6.0.0
 # google-auth-oauthlib
 # google-api-python-client
 # replicate
+# chatterbox-tts  # local voice cloning; pulls torch + the gradio/diffusers/audio
+                  # stack, so it is NOT in the default install. Edge-TTS is the
+                  # default voice. Install torch first per your GPU/CPU setup,
+                  # see https://pytorch.org/get-started/locally/
 # torch  # required by chatterbox-tts; install per your GPU/CPU setup, see
          # https://pytorch.org/get-started/locally/ for the correct build

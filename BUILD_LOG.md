@@ -250,6 +250,23 @@ as deliberate drops (dead spec) rather than unfinished work.
   UPLOAD_MODE=pipedream wiring + the n8n-is-an-orchestrator-not-a-model-host note
   (self-hosted SD is called by n8n, not hosted by it).
 
+- 2026-08-18: Dependency incompatibility fixes — two real breaks surfaced when running on
+  system Python (openai 1.44.0 + httpx 0.28.1):
+  (1) httpx 0.28.0 removed the `proxies` constructor arg; openai 1.x (<1.59) still passes
+  `proxies` into its internal httpx client -> `TypeError: Client.__init__() got an unexpected
+  keyword argument 'proxies'` on any OpenAI(...) construction. Fixed by pinning
+  `openai[aiohttp]>=3,<4` + `httpx>=0.28,<1` in requirements.txt (openai 3.x uses httpx2 and
+  is httpx-0.28-compatible).
+  (2) openai 3.x eagerly imports `aiohttp.SocketTimeoutError` at import time
+  (openai/_vendor/httpx_aiohttp) but only declares aiohttp as the `[aiohttp]` extra
+  (>=3.14.1); plain `openai` crashed on aiohttp<3.14 (system had 3.9.1). Fixed by declaring
+  `openai[aiohttp]` so pip installs aiohttp>=3.14.x. Verified on system Python after upgrade:
+  client constructs, live Ollama chat round-trip returns the strict-JSON script/SEO shape,
+  and an image round-trip via scripts/local_image_stub.py returns a valid PNG.
+  Also moved chatterbox-tts to the requirements.txt OPTIONAL block — it was uncommented
+  (required) but pulls torch-2.6 + gradio/diffusers/librosa/audio stack (~multi-GB), which is
+  why the venv never had it and the README treats it as optional (Edge-TTS is default voice).
+
 ## Rebuild Rule
 
 Every session: commit and push working code before closing, even if incomplete.

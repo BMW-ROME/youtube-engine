@@ -52,6 +52,11 @@ SEO metadata, YouTube Shorts, and uploads across 7 built-in channels plus an unl
 
 Optional (system runs without these): Chatterbox (local voice cloning), Replicate (animated/AI video), Google API libs (direct YouTube upload).
 
+> Dependency note: `requirements.txt` pins `openai[aiohttp]>=3,<4`. openai 3.x is required
+> (openai 1.x is incompatible with httpx >= 0.28), and the `[aiohttp]` extra is required
+> because openai 3.x imports `aiohttp.SocketTimeoutError` at import time but only declares
+> aiohttp as an optional extra. `pip install -r requirements.txt` installs the tested matrix.
+
 ## Quick Start (Windows)
 
 ```batch
