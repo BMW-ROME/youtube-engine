@@ -15,6 +15,7 @@ pydantic>=2.6.0
 pydantic-settings>=2.2.0
 python-dotenv>=1.0.0
 requests>=2.31.0
+PyYAML>=6.0
 feedparser>=6.0.0
 
 # Optional - install manually if needed

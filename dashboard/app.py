@@ -304,7 +304,7 @@ async def api_search(q: str = "", channel: Optional[str] = None, limit: int = 5)
     try:
         from core.rag_index import search
         hits = search(q, top_k=limit, channel=channel)
-        return {"query": q, "vector_available": any(h.get("vector") for h in hits) or bool(hits), "hits": hits}
+        return {"query": q, "vector_available": any(h.get("vector") for h in hits), "hits": hits}
     except Exception as exc:
         logger.error("api_search failed: %s", exc)
         return JSONResponse(status_code=200, content={"query": q, "hits": []})

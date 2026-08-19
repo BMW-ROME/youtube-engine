@@ -6,10 +6,10 @@ services:
     env_file: .env
     environment:
       - CONTENT_DIR=/app/output
-      - RUN_HISTORY_PATH=/app/run_history.jsonl
+      - RUN_HISTORY_PATH=/app/data/run_history.jsonl
     volumes:
       - ./output:/app/output
-      - ./run_history.jsonl:/app/run_history.jsonl
+      - ./data:/app/data
       # Mount your Chatterbox reference clip (if used) and set
       # CHATTERBOX_VOICE_SAMPLE_PATH in .env:
       # - ./voice_samples:/app/voice_samples
@@ -23,12 +23,12 @@ services:
     env_file: .env
     environment:
       - CONTENT_DIR=/app/output
-      - RUN_HISTORY_PATH=/app/run_history.jsonl
+      - RUN_HISTORY_PATH=/app/data/run_history.jsonl
       - DASHBOARD_HOST=0.0.0.0
       - DASHBOARD_PORT=8000
     volumes:
       - ./output:/app/output
-      - ./run_history.jsonl:/app/run_history.jsonl
+      - ./data:/app/data
     ports:
       - "${DASHBOARD_PORT:-8000}:8000"
     command: ["python", "dashboard/app.py"]

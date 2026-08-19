@@ -300,6 +300,21 @@ as deliberate drops (dead spec) rather than unfinished work.
   VIDEO_AUDIO_SAMPLERATE (48000), VIDEO_AUDIO_CHANNELS (2). Verified by ffprobe on a rebuilt
   video: yuv420p, aac 48000 Hz stereo >=160k, 1920x1080 30fps.
 
+- 2026-08-19: Post-audit correctness sweep (part 1 - config/docs). Fixed dashboard
+  /api/search reporting "vectors active" on FTS-only results (vector_available was
+  `any(vector) or bool(hits)`; rag_index already marks each hit with the real global
+  vector flag, so the `or bool(hits)` made every non-empty FTS result lie). Added the
+  missing APSCHEDULER_ENABLED=true line to .env.template (orchestrator.py:48 reads it,
+  the template only referenced it in a comment). Added PyYAML to requirements.txt
+  (core/brand_aware_prompts.py imports yaml unguarded, so the brand/CTA feature was
+  silently dead on default installs) and guarded that import for minimal runs.
+  .gitignore now covers assets/music/*.wav (music_mixer globs mp3 + wav). docker-compose
+  no longer file-binds the gitignored run_history.jsonl (Docker created a DIRECTORY at
+  that path, silently dropping history); it now directory-binds ./data:/app/data with
+  RUN_HISTORY_PATH=/app/data/run_history.jsonl. README project tree + single-channel
+  quick-start refreshed (adds index_rag.py, local_image_stub.py, cards.html, search.html,
+  app.js; run_once.py marked legacy, validate_e2e.py promoted).
+
 ## Rebuild Rule
 
 Every session: commit and push working code before closing, even if incomplete.

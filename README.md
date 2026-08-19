@@ -80,9 +80,14 @@ python scripts/start_engine.py --category "true crime" --topic "Unsolved Mysteri
 
 ### Single Channel Test
 ```batch
-python scripts/run_once.py --channel finance
-python scripts/run_once.py --channel tech --topic "GPT-5 Changes Everything"
+:: $0 full-pipeline validation (script + voice + images all use faked clients)
+python scripts/validate_e2e.py
+:: Actually produce one real video end-to-end:
+python -m core.pipeline "GPT-5 Changes Everything" tech
 ```
+> Note: `scripts/run_once.py` is a legacy per-stage manual tool kept for
+> debugging only — use `validate_e2e.py` (faked, $0) or
+> `python -m core.pipeline` (real) instead.
 
 ## Quick Start (Docker)
 ```bash
@@ -133,19 +138,26 @@ youtube-engine/
 │
 ├── dashboard/
 │   ├── app.py                   # FastAPI dashboard + REST API
-│   ├── templates/index.html
-│   └── static/style.css
+│   ├── templates/
+│   │   ├── index.html           # Dashboard home (nav to cards + search)
+│   │   ├── cards.html           # Content-card grid (/videos)
+│   │   └── search.html          # Transcript RAG search / ask UI
+│   └── static/
+│       ├── style.css
+│       └── app.js               # Search page logic
 │
 └── scripts/
     ├── start_engine.py          # Main CLI (menu + args + Freestyle)
     ├── setup.py                 # First-time setup wizard (env bootstrap + OAuth)
     ├── setup_voice.py           # Chatterbox voice clone wizard
-    ├── run_once.py              # Manual single-video tool
-    ├── verify_environment.py    # Pre-flight check (ffmpeg, deps, env vars)
     ├── validate_e2e.py          # $0 end-to-end pipeline validation (patched transport)
+    ├── verify_environment.py    # Legacy pre-flight check (superseded by validate_e2e.py)
+    ├── run_once.py              # Legacy per-stage manual tool (see validate_e2e.py)
+    ├── index_rag.py             # Build the transcript RAG index (FTS5 + embeddings)
+    ├── local_image_stub.py      # Local DALL-E stub server for IMAGE_BASE_URL
     ├── upload_ready.py          # Batch upload ready/ folder
     ├── quick_upload.py          # Quick single-video upload
-    ├── test_pipeline_integration.py
+    ├── test_pipeline_integration.py  # $0 pipeline test (all backends faked)
     └── test_free_real_apis.py
 ```
 

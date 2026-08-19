@@ -29,6 +29,8 @@ output/
 *.db
 *.sqlite3
 assets/music/*.mp3
+assets/music/*.wav
+data/
 assets/generated/
 run_history.jsonl
 

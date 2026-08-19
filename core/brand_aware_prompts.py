@@ -31,7 +31,11 @@ import os
 from typing import Any, Dict
 
 import requests
-import yaml
+
+try:  # PyYAML is a core dependency; degrade gracefully on minimal installs
+    import yaml
+except ImportError:  # pragma: no cover
+    yaml = None
 
 from config.brand_loader import get_brand_identity
 
