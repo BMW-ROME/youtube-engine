@@ -1,0 +1,70 @@
+{
+  "name": "YouTube Engine - Upload Webhook Receiver",
+  "nodes": [
+    {
+      "id": "webhook-upload",
+      "name": "Webhook - youtube-engine/upload",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "youtube-engine/upload",
+        "responseMode": "lastNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "code-normalize",
+      "name": "Normalize Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return items.map((item) => ({\n  json: {\n    event: 'youtube-engine.upload',\n    receivedAt: new Date().toISOString(),\n    ...item.json\n  }\n}));"
+      }
+    },
+    {
+      "id": "respond-ok",
+      "name": "Respond 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [440, 0],
+      "parameters": {
+        "respondWith": "json",
+        "responseCode": 200,
+        "responseBody": "={{ { ok: true, event: $json.event, receivedAt: $json.receivedAt } }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook - youtube-engine/upload": {
+      "main": [
+        [
+          {
+            "node": "Normalize Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Payload": {
+      "main": [
+        [
+          {
+            "node": "Respond 200",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

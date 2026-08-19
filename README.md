@@ -36,6 +36,7 @@ SEO metadata, YouTube Shorts, and uploads across 7 built-in channels plus an unl
 - APScheduler — automated daily production with per-channel cron (post-time schedule) and retry with backoff
 - SQLite Tracking — every video tracked from QUEUED → PUBLISHED (or FAILED)
 - Web Dashboard — real-time status at `:8000`
+- n8n Integration — importable workflows in `n8n/` for cron-triggered runs, topic replenish, and a webhook receiver for `UPLOAD_MODE=pipedream`
 - Docker Ready — one-command deployment with `docker-compose`
 - Windows First — `start_engine.bat` launcher with interactive menu
 

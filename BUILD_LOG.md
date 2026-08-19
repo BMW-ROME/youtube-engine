@@ -234,6 +234,22 @@ as deliberate drops (dead spec) rather than unfinished work.
   6 MB MP4 (output/videos/14.mp4) with complete SEO metadata incl. the marketing-ops brand CTA.
   This validates the whole local-first architecture without spending a cent.
 
+- 2026-08-18: n8n integration pieces — core/pipeline.py stage 10 now falls back to
+  settings.pipedream_webhook_url when no explicit webhook_url is injected
+  (config.get("webhook_url") or settings.pipedream_webhook_url), so UPLOAD_MODE=pipedream
+  works from EVERY caller (orchestrator, dashboard /api/trigger, start_engine) by just
+  setting PIPEDREAM_WEBHOOK_URL in .env — previously the webhook POST target would have
+  been None outside scripts that passed a webhook_url explicitly. Verified end-to-end
+  with a local HTTP receiver (pipedream_sent, status 200, full metadata payload).
+  Added n8n/ with three importable workflows: pipeline-trigger.workflow.json (per-channel
+  cron -> POST /api/trigger/{channel}, EST schedule, $env.ENGINE_URL with localhost
+  default), topic-replenish.workflow.json (2 AM cron -> loop -> POST
+  /api/topics/{channel}/generate), upload-webhook.workflow.json (POST
+  /webhook/youtube-engine/upload -> normalize -> Respond 200). All three validated:
+  valid JSON, no dangling connections. n8n/README.md covers import + ENGINE_URL +
+  UPLOAD_MODE=pipedream wiring + the n8n-is-an-orchestrator-not-a-model-host note
+  (self-hosted SD is called by n8n, not hosted by it).
+
 ## Rebuild Rule
 
 Every session: commit and push working code before closing, even if incomplete.

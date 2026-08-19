@@ -1,0 +1,305 @@
+{
+  "name": "YouTube Engine - Channel Pipeline Triggers",
+  "nodes": [
+    {
+      "id": "cron-finance",
+      "name": "Cron - Finance (8AM ET)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "custom",
+              "cronExpression": "0 8 * * *"
+            }
+          ],
+          "timezone": "America/New_York"
+        }
+      }
+    },
+    {
+      "id": "http-finance",
+      "name": "HTTP - /api/trigger/finance",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [0, 240],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ENGINE_URL || 'http://localhost:8000' }}/api/trigger/finance",
+        "sendBody": false,
+        "options": {}
+      }
+    },
+    {
+      "id": "cron-trending",
+      "name": "Cron - Trending (10AM ET)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 2,
+      "position": [400, 0],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "custom",
+              "cronExpression": "0 10 * * *"
+            }
+          ],
+          "timezone": "America/New_York"
+        }
+      }
+    },
+    {
+      "id": "http-trending",
+      "name": "HTTP - /api/trigger/trending",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 240],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ENGINE_URL || 'http://localhost:8000' }}/api/trigger/trending",
+        "sendBody": false,
+        "options": {}
+      }
+    },
+    {
+      "id": "cron-mmo",
+      "name": "Cron - MMO (12PM ET)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 2,
+      "position": [800, 0],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "custom",
+              "cronExpression": "0 12 * * *"
+            }
+          ],
+          "timezone": "America/New_York"
+        }
+      }
+    },
+    {
+      "id": "http-mmo",
+      "name": "HTTP - /api/trigger/mmo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [800, 240],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ENGINE_URL || 'http://localhost:8000' }}/api/trigger/mmo",
+        "sendBody": false,
+        "options": {}
+      }
+    },
+    {
+      "id": "cron-thee3lite",
+      "name": "Cron - Thee3lite (2PM ET)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 2,
+      "position": [1200, 0],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "custom",
+              "cronExpression": "0 14 * * *"
+            }
+          ],
+          "timezone": "America/New_York"
+        }
+      }
+    },
+    {
+      "id": "http-thee3lite",
+      "name": "HTTP - /api/trigger/thee3lite",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 240],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ENGINE_URL || 'http://localhost:8000' }}/api/trigger/thee3lite",
+        "sendBody": false,
+        "options": {}
+      }
+    },
+    {
+      "id": "cron-tech",
+      "name": "Cron - Tech (4PM ET)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 2,
+      "position": [1600, 0],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "custom",
+              "cronExpression": "0 16 * * *"
+            }
+          ],
+          "timezone": "America/New_York"
+        }
+      }
+    },
+    {
+      "id": "http-tech",
+      "name": "HTTP - /api/trigger/tech",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1600, 240],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ENGINE_URL || 'http://localhost:8000' }}/api/trigger/tech",
+        "sendBody": false,
+        "options": {}
+      }
+    },
+    {
+      "id": "cron-legal",
+      "name": "Cron - Legal (6PM ET)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 2,
+      "position": [2000, 0],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "custom",
+              "cronExpression": "0 18 * * *"
+            }
+          ],
+          "timezone": "America/New_York"
+        }
+      }
+    },
+    {
+      "id": "http-legal",
+      "name": "HTTP - /api/trigger/legal",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 240],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ENGINE_URL || 'http://localhost:8000' }}/api/trigger/legal",
+        "sendBody": false,
+        "options": {}
+      }
+    },
+    {
+      "id": "cron-stories",
+      "name": "Cron - Stories (8PM ET)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 2,
+      "position": [2400, 0],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "custom",
+              "cronExpression": "0 20 * * *"
+            }
+          ],
+          "timezone": "America/New_York"
+        }
+      }
+    },
+    {
+      "id": "http-stories",
+      "name": "HTTP - /api/trigger/stories",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2400, 240],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ENGINE_URL || 'http://localhost:8000' }}/api/trigger/stories",
+        "sendBody": false,
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Cron - Finance (8AM ET)": {
+      "main": [
+        [
+          {
+            "node": "HTTP - /api/trigger/finance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron - Trending (10AM ET)": {
+      "main": [
+        [
+          {
+            "node": "HTTP - /api/trigger/trending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron - MMO (12PM ET)": {
+      "main": [
+        [
+          {
+            "node": "HTTP - /api/trigger/mmo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron - Thee3lite (2PM ET)": {
+      "main": [
+        [
+          {
+            "node": "HTTP - /api/trigger/thee3lite",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron - Tech (4PM ET)": {
+      "main": [
+        [
+          {
+            "node": "HTTP - /api/trigger/tech",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron - Legal (6PM ET)": {
+      "main": [
+        [
+          {
+            "node": "HTTP - /api/trigger/legal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron - Stories (8PM ET)": {
+      "main": [
+        [
+          {
+            "node": "HTTP - /api/trigger/stories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

@@ -1,0 +1,98 @@
+{
+  "name": "YouTube Engine - Daily Topic Replenish (2AM ET)",
+  "nodes": [
+    {
+      "id": "cron-replenish",
+      "name": "Cron - Daily 2AM ET",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "custom",
+              "cronExpression": "0 2 * * *"
+            }
+          ],
+          "timezone": "America/New_York"
+        }
+      }
+    },
+    {
+      "id": "code-channels",
+      "name": "Channels",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [\n  { json: { channel: 'finance' } },\n  { json: { channel: 'trending' } },\n  { json: { channel: 'mmo' } },\n  { json: { channel: 'thee3lite' } },\n  { json: { channel: 'tech' } },\n  { json: { channel: 'legal' } },\n  { json: { channel: 'stories' } }\n];"
+      }
+    },
+    {
+      "id": "loop-channels",
+      "name": "Loop Over Channels",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [440, 0],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "http-replenish",
+      "name": "HTTP - /api/topics/{channel}/generate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ENGINE_URL || 'http://localhost:8000' }}/api/topics/{{ $json.channel }}/generate",
+        "sendBody": false,
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Cron - Daily 2AM ET": {
+      "main": [
+        [
+          {
+            "node": "Channels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Channels": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Channels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Channels": {
+      "main": [
+        [
+          {
+            "node": "HTTP - /api/topics/{channel}/generate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

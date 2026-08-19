@@ -256,7 +256,7 @@ def run_pipeline(
                     mode=upload_mode, video_path=result.final_video_path,
                     seo_result=result.seo_result, channel=channel,
                     thumbnail_path=result.thumbnail_path,
-                    webhook_url=config.get("webhook_url"),
+                    webhook_url=config.get("webhook_url") or settings.pipedream_webhook_url,
                 )
         except ImportError as exc:
             logger.error("uploader module unavailable: %s", exc)
