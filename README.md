@@ -159,7 +159,7 @@ youtube-engine/
 4. **Images** (DALL-E 3) — parallel generation, content-filter resilience: sanitize → safety suffix → 2-attempt retry → placeholder.
 5. **Thumbnail Text Overlay** (Pillow) — bold keyword text burned onto thumbnail, skipped gracefully if Pillow missing.
 6. **Video Effects** — kenburns (free), sketch (free), animated ($ via Replicate), ai_video ($$ via Replicate).
-7. **Assembly** (FFmpeg) — crossfade transitions, 1080p H.264 + AAC, faststart flag.
+7. **Assembly** (FFmpeg) — crossfade transitions, 1080p H.264 (yuv420p, CRF 16, preset slow) + AAC 48 kHz stereo, faststart flag.
    - 7b. Chapter Markers — auto-generated from scene boundaries.
    - 7c. Affiliate Links — channel-scoped placeholders injected into description.
    - 7d. Pinned Comment — GPT-4o drafted engagement comment.

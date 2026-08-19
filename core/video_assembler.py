@@ -58,6 +58,23 @@ def _probe_duration(path: str) -> float:
         return 0.0
 
 
+def _encode_args() -> List[str]:
+    """Shared final-encode flags: broadcast-safe yuv420p, tuned CRF/preset,
+    and audio upsampled to 48 kHz stereo at a real bitrate (settings-driven)."""
+    from config.settings import settings
+    return [
+        "-c:v", "libx264",
+        "-crf", str(settings.video_crf),
+        "-preset", settings.video_preset,
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac",
+        "-b:a", settings.video_audio_bitrate,
+        "-ar", str(settings.video_audio_samplerate),
+        "-ac", str(settings.video_audio_channels),
+        "-movflags", "+faststart",
+    ]
+
+
 def _build_crossfade_filter(clip_paths: List[str], transition_duration: float) -> tuple:
     """
     Build an ffmpeg filter_complex graph chaining xfade across all clips.
@@ -133,8 +150,8 @@ def assemble_video(
         cmd = [
             "ffmpeg", "-y", *inputs,
             "-map", "0:v", "-map", f"{audio_input_index}:a",
-            "-c:v", "libx264", "-c:a", "aac",
-            "-shortest", "-movflags", "+faststart",
+            *_encode_args(),
+            "-shortest",
             output_path,
         ]
     else:
@@ -143,8 +160,8 @@ def assemble_video(
             "ffmpeg", "-y", *inputs,
             "-filter_complex", filter_complex,
             "-map", f"[{final_label}]", "-map", f"{audio_input_index}:a",
-            "-c:v", "libx264", "-c:a", "aac",
-            "-shortest", "-movflags", "+faststart",
+            *_encode_args(),
+            "-shortest",
             output_path,
         ]
 

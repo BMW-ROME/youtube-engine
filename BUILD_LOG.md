@@ -288,6 +288,18 @@ as deliberate drops (dead spec) rather than unfinished work.
   hybrid search on 'index funds' ranks video 14 scenes semantically, and ask() returned a
   coherent strict-JSON answer with sources.
 
+- 2026-08-19: Optimum-quality final encode. ffprobe audit of output/videos/14.mp4 found the
+  headline spec (1080p H.264 + AAC + faststart) was met but the real output was NOT optimum:
+  multi-clip xfade assembly was emitting yuv444p, and audio was AAC 24 kHz mono ~72 kbps
+  (edge-tts native, re-encoded untouched). video_assembler.py now emits broadcast-safe
+  yuv420p + settings-driven CRF 16 / preset slow + audio upsampled/mixed to 48 kHz stereo at
+  160 kbps on BOTH encode branches (single-clip and crossfade) via a shared _encode_args().
+  video_effects.py kenburns/sketch now use scale=1920:1080:force_original_aspect_ratio=
+  increase,crop=1920:1080 so any backend aspect is center-cropped, never stretched. New
+  settings: VIDEO_CRF (16), VIDEO_PRESET (slow), VIDEO_AUDIO_BITRATE (160k),
+  VIDEO_AUDIO_SAMPLERATE (48000), VIDEO_AUDIO_CHANNELS (2). Verified by ffprobe on a rebuilt
+  video: yuv420p, aac 48000 Hz stereo >=160k, 1920x1080 30fps.
+
 ## Rebuild Rule
 
 Every session: commit and push working code before closing, even if incomplete.

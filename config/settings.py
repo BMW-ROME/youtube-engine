@@ -53,6 +53,16 @@ class Settings(BaseSettings):
     default_video_mode: str = Field(default="kenburns", alias="DEFAULT_VIDEO_MODE")
     replicate_api_token: str | None = Field(default=None, alias="REPLICATE_API_TOKEN")
 
+    # ===== Video Quality (final 1080p encode) =====
+    # Applied by video_assembler.py to every final video: CRF (lower = better,
+    # 16 is visually near-lossless), libx264 preset (slow = max quality),
+    # and the audio track upsampled/mixed to 48 kHz stereo at a real bitrate.
+    video_crf: int = Field(default=16, alias="VIDEO_CRF")
+    video_preset: str = Field(default="slow", alias="VIDEO_PRESET")
+    video_audio_bitrate: str = Field(default="160k", alias="VIDEO_AUDIO_BITRATE")
+    video_audio_samplerate: int = Field(default=48000, alias="VIDEO_AUDIO_SAMPLERATE")
+    video_audio_channels: int = Field(default=2, alias="VIDEO_AUDIO_CHANNELS")
+
     # ===== Shorts & Music =====
     generate_shorts: bool = Field(default=False, alias="GENERATE_SHORTS")
     shorts_per_video: int = Field(default=3, alias="SHORTS_PER_VIDEO")

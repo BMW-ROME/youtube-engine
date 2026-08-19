@@ -74,7 +74,8 @@ def _kenburns_clip(image_path: str, output_path: str, duration: float) -> bool:
     fps = 30
     frames = int(duration * fps)
     filter_str = (
-        f"scale=1920:1080,zoompan=z='min(zoom+0.0015,1.15)':"
+        f"scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,"
+        f"zoompan=z='min(zoom+0.0015,1.15)':"
         f"d={frames}:s=1920x1080:fps={fps}"
     )
     cmd = [
@@ -96,7 +97,10 @@ def _sketch_clip(image_path: str, output_path: str, duration: float) -> bool:
         logger.error("[video_effects] ffmpeg not found on PATH - cannot render sketch clip.")
         return False
 
-    filter_str = "scale=1920:1080,edgedetect=mode=colormix:high=0.4,format=gray"
+    filter_str = (
+        "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,"
+        "edgedetect=mode=colormix:high=0.4,format=gray"
+    )
     cmd = [
         "ffmpeg", "-y", "-loop", "1", "-i", image_path,
         "-vf", filter_str, "-t", str(duration),
