@@ -224,6 +224,16 @@ as deliberate drops (dead spec) rather than unfinished work.
   test_free_real_apis.py now actually applies (sets LLM_MODEL before stage import);
   verify_environment.py gained non-fatal backend reachability probes.
 
+- 2026-08-18: FULLY LOCAL end-to-end proof — a run_pipeline() with ZERO fakes or transport
+  patching: script + SEO from local Ollama (LLM_MODEL=qwen2.5-coder:3B, the model proven to
+  satisfy the strict JSON schema), 10 scene images from scripts/local_image_stub.py (a ~1KB
+  OpenAI-shaped /v1/images/generations dev server returning real Pillow PNGs — stands in for
+  LocalAI/ComfyUI until a GPU box with real diffusion models is available; IMAGE_BASE_URL is
+  the only thing that changes), real Edge-TTS voice, real ffmpeg kenburns effects + assembly,
+  real Pillow thumbnail overlay, upload=local sidecar. Result: success=True, failed=[], a
+  6 MB MP4 (output/videos/14.mp4) with complete SEO metadata incl. the marketing-ops brand CTA.
+  This validates the whole local-first architecture without spending a cent.
+
 ## Rebuild Rule
 
 Every session: commit and push working code before closing, even if incomplete.
