@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Transcript RAG — YouTube Engine Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>YouTube Engine — Transcript Search</h1>
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/videos">Library</a>
+      <a href="/search">Search</a>
+    </nav>
+  </header>
+
+  <section class="rag-box">
+    <h2>Search transcripts</h2>
+    <form id="search-form">
+      <input id="search-q" type="text" placeholder="e.g. index funds" autocomplete="off">
+      <button type="submit">Search</button>
+      <span id="search-vec" class="muted"></span>
+    </form>
+    <div id="search-results"></div>
+  </section>
+
+  <section class="rag-box">
+    <h2>Ask a question</h2>
+    <form id="ask-form">
+      <input id="ask-q" type="text" placeholder="e.g. What did we cover about compounding?" autocomplete="off">
+      <button type="submit">Ask</button>
+    </form>
+    <div id="ask-result"></div>
+  </section>
+
+  <script>
+    const esc = s => { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; };
+
+    async function runSearch(event) {
+      event.preventDefault();
+      const q = document.getElementById('search-q').value.trim();
+      const box = document.getElementById('search-results');
+      const vec = document.getElementById('search-vec');
+      if (!q) return;
+      box.innerHTML = '<p class="muted">Searching…</p>';
+      vec.textContent = '';
+      try {
+        const res = await fetch('/api/search?q=' + encodeURIComponent(q));
+        const data = await res.json();
+        vec.textContent = data.vector_available ? '(vectors active)' : '(FTS-only)';
+        if (!data.hits.length) { box.innerHTML = '<p class="muted">No matches.</p>'; return; }
+        box.innerHTML = data.hits.map(h =>
+          `<div class="vcard rag-hit">
+             <div class="vcard-body">
+               <div class="badges">
+                 <span class="badge">video ${h.video_id}</span>
+                 <span class="badge">${esc(h.channel)}</span>
+                 <span class="badge">${esc(h.source)}${h.scene_index !== null && h.scene_index !== undefined ? ' #' + h.scene_index : ''}</span>
+               </div>
+               <p class="vcard-desc">${esc(h.topic)}</p>
+               <p class="rag-text">${esc(h.content)}</p>
+               <div class="vcard-meta muted">score ${esc(h.score)}</div>
+             </div>
+           </div>`).join('');
+      } catch (err) {
+        box.innerHTML = '<p class="fail">Search failed: ' + esc(err.message) + '</p>';
+      }
+    }
+
+    async function runAsk(event) {
+      event.preventDefault();
+      const q = document.getElementById('ask-q').value.trim();
+      const box = document.getElementById('ask-result');
+      if (!q) return;
+      box.innerHTML = '<p class="muted">Asking…</p>';
+      try {
+        const res = await fetch('/api/ask?q=' + encodeURIComponent(q));
+        const data = await res.json();
+        let html = '<div class="vcard"><div class="vcard-body">';
+        html += '<p class="rag-answer">' + esc(data.answer) + '</p>';
+        html += '<div class="vcard-meta muted">Sources</div>';
+        html += data.sources.map(s =>
+          `<p class="rag-text"><a class="link" href="/videos">video ${s.video_id}</a> — ${esc(s.content)}</p>`).join('');
+        html += '</div></div>';
+        box.innerHTML = html;
+      } catch (err) {
+        box.innerHTML = '<p class="fail">Ask failed: ' + esc(err.message) + '</p>';
+      }
+    }
+
+    document.getElementById('search-form').addEventListener('submit', runSearch);
+    document.getElementById('ask-form').addEventListener('submit', runAsk);
+  </script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Video Library — YouTube Engine Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <meta http-equiv="refresh" content="15">
+</head>
+<body>
+  <header>
+    <h1>YouTube Engine — Video Library</h1>
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/videos">Library</a>
+      <a href="/search">Search</a>
+    </nav>
+    <span class="refresh-note">Auto-refresh every 15s</span>
+  </header>
+
+  {% if cards %}
+  <div class="card-grid">
+    {% for c in cards %}
+    <div class="vcard">
+      <div class="vcard-thumb">
+        {% if c.thumbnail %}
+        <img src="/media?p={{ c.thumbnail }}" alt="{{ c.title }}">
+        {% else %}
+        <div class="vcard-thumb-placeholder">No thumbnail</div>
+        {% endif %}
+      </div>
+      <div class="vcard-body">
+        <h3 class="vcard-title">{{ c.title }}</h3>
+        {% if c.description %}
+        <p class="vcard-desc">{{ c.description[:120] }}{% if c.description|length > 120 %}…{% endif %}</p>
+        {% endif %}
+        <div class="badges">
+          <span class="badge">{{ c.channel }}</span>
+          <span class="badge status {{ c.status|lower }}">{{ c.status }}</span>
+          {% if c.video_mode %}<span class="badge">{{ c.video_mode }}</span>{% endif %}
+        </div>
+        <div class="vcard-meta muted">
+          <span>ID {{ c.id }}</span>
+          {% if c.created_at %}<span>Created {{ c.created_at }}</span>{% endif %}
+          {% if c.published_at %}<span>Published {{ c.published_at }}</span>{% endif %}
+        </div>
+        <div class="vcard-links">
+          {% if c.media %}<a class="link" href="/media?p={{ c.media }}" target="_blank">Watch media</a>{% endif %}
+          {% if c.youtube_url %}<a class="link" href="{{ c.youtube_url }}" target="_blank">YouTube</a>{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">No videos recorded yet.</p>
+  {% endif %}
+</body>
+</html>

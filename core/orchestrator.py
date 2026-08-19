@@ -86,6 +86,20 @@ def _persist_result(result: PipelineResult) -> None:
         logger.error("Failed to persist run history: %s", exc)
 
 
+def _index_result(result: PipelineResult) -> None:
+    """Auto-index a produced video into the transcript RAG store (optional).
+    Guarded by settings.rag_enabled; failures never affect the run."""
+    try:
+        from config.settings import settings
+        if not settings.rag_enabled or getattr(result, "video_id", None) is None:
+            return
+        from core.rag_index import index_video
+        index_video(result.video_id)
+    except Exception as exc:
+        logger.warning("RAG auto-index skipped for video %s: %s",
+                       getattr(result, "video_id", None), exc)
+
+
 def run_once(topic: Optional[str] = None, channel_codename: Optional[str] = None) -> Optional[PipelineResult]:
     """Run a single pipeline pass, catching any error so callers never crash."""
     chosen_topic = topic or _next_topic(channel_codename=channel_codename)
@@ -102,6 +116,7 @@ def run_once(topic: Optional[str] = None, channel_codename: Optional[str] = None
                 chosen_topic,
                 result.failed_stages,
             )
+        _index_result(result)
         return result
     except Exception:
         logger.error(

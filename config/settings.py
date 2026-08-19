@@ -65,6 +65,25 @@ class Settings(BaseSettings):
     youtube_refresh_token: str | None = Field(default=None, alias="YOUTUBE_REFRESH_TOKEN")
     pipedream_webhook_url: str | None = Field(default=None, alias="PIPEDREAM_WEBHOOK_URL")
 
+    # ===== Transcript RAG =====
+    # Hybrid retrieval over produced videos' transcripts: SQLite FTS5 keyword
+    # search always works offline; embeddings add semantic ranking when a model
+    # is available on EMBEDDINGS_BASE_URL (an Ollama-ish /api/embeddings). If the
+    # embed model is missing the index degrades to FTS-only instead of failing.
+    rag_enabled: bool = Field(default=True, alias="RAG_ENABLED")
+    rag_embedding_model: str = Field(default="nomic-embed-text", alias="RAG_EMBEDDING_MODEL")
+    rag_db_path: str | None = Field(default=None, alias="RAG_DB_PATH")
+    embeddings_base_url: str = Field(default="http://localhost:11434", alias="EMBEDDINGS_BASE_URL")
+
+    @property
+    def rag_db_file(self) -> Path:
+        if self.rag_db_path:
+            path = Path(self.rag_db_path)
+        else:
+            path = self.content_path / "rag.db"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        return path
+
     # ===== General =====
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
     dashboard_host: str = Field(default="0.0.0.0", alias="DASHBOARD_HOST")

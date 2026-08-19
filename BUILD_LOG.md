@@ -267,6 +267,27 @@ as deliberate drops (dead spec) rather than unfinished work.
   (required) but pulls torch-2.6 + gradio/diffusers/librosa/audio stack (~multi-GB), which is
   why the venv never had it and the README treats it as optional (Edge-TTS is default voice).
 
+- 2026-08-19: Video Library dashboard + hybrid transcript RAG.
+  Content-card dashboard: new GET /videos page (dashboard/templates/cards.html) — dark-themed
+  card grid of produced videos (thumbnail via a resolution chain from output/images, channel/
+  status/video_mode badges, created/published dates, 'Watch media' + YouTube links), plus a
+  traversal-safe GET /media route that serves local thumbnails/videos exclusively from
+  settings.content_path (FileResponse, containment guard). No new dependencies.
+  Transcript RAG (core/rag_index.py + scripts/index_rag.py + dashboard /search page and
+  /api/search + /api/ask): transcripts are extracted from content_db metadata_json["script"]
+  (hook + per-scene narration + outro), chunked, and stored in output/rag.db (SQLite FTS5
+  virtual table + optional Ollama embeddings via settings.embeddings_base_url/api/embeddings,
+  pure-Python cosine). Embedding failure degrades to FTS-only keyword search (verified against
+  a dead endpoint); empty stores return empty results instead of crashing. ask() chains the
+  proven strict-JSON chat client (script_writer.OpenAIChatClient, qwen2.5-coder) and returns
+  {answer, sources[]}. SEO metadata is now also persisted into metadata_json["seo"] by
+  pipeline.py (mirrors the script persist at script_writer.py) so cards show real titles/
+  descriptions and RAG can search them later. Orchestrator.run_once auto-indexes each produced
+  video behind settings.rag_enabled (core/orchestrator._index_result). Live-verified against
+  the existing local content.db: 10 videos indexed (12/10/5 chunks each) with live vectors,
+  hybrid search on 'index funds' ranks video 14 scenes semantically, and ask() returned a
+  coherent strict-JSON answer with sources.
+
 ## Rebuild Rule
 
 Every session: commit and push working code before closing, even if incomplete.

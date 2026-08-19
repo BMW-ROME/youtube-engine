@@ -222,6 +222,17 @@ def run_pipeline(
                 script=result.script.to_dict(),
                 chapter_markers=result.chapter_markers,
             )
+            if result.seo_result is not None:
+                content_db.update_metadata(video_id, {
+                    "seo": {
+                        "title": result.seo_result.title,
+                        "description": result.seo_result.description,
+                        "tags": result.seo_result.tags,
+                        "hashtags": result.seo_result.hashtags,
+                        "pinned_comment": result.seo_result.pinned_comment,
+                        "end_screen_topics": getattr(result.seo_result, "end_screen_topics", []),
+                    }
+                })
         except ImportError as exc:
             logger.error("seo_optimizer module unavailable: %s", exc)
             result.failed_stages.append("seo")

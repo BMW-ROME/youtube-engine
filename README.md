@@ -33,6 +33,8 @@ SEO metadata, YouTube Shorts, and uploads across 7 built-in channels plus an unl
 - Monetization Features — affiliate placeholders, pinned comment drafts, end screen suggestions, chapter markers
 - 4 Upload Modes — `local`, `skip`, `pipedream`, or direct `youtube_api`
 - Resilient Architecture — every optional dependency (Chatterbox, Google, Replicate, httpx) is wrapped in try/except so the system runs even if packages are missing
+- Transcript RAG — hybrid (FTS5 + optional Ollama vectors) search + Q&A over every produced video's script, via `core/rag_index.py` and the dashboard `/search` page
+- Video Library — dark-themed card grid of produced videos at `/videos` (thumbnails, status badges, local media viewer)
 - APScheduler — automated daily production with per-channel cron (post-time schedule) and retry with backoff
 - SQLite Tracking — every video tracked from QUEUED → PUBLISHED (or FAILED)
 - Web Dashboard — real-time status at `:8000`
@@ -252,14 +254,36 @@ Only needed for `UPLOAD_MODE=youtube_api`:
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | /health | Health check |
+| GET | /videos | Video library card grid (local media via /media) |
+| GET | /media?p=… | Serve a local thumbnail/video from content_path (traversal-safe) |
+| GET | /search | Transcript RAG search + Q&A page |
 | GET | /api/channels | All channel stats (from content_db) |
 | GET | /api/videos | List videos (filterable) |
 | GET | /api/videos/{id} | Single video detail |
+| GET | /api/search?q=… | Hybrid transcript search (FTS5 + optional vectors) |
+| GET | /api/ask?q=… | Transcript question-answering (chat LLM, strict JSON) |
 | POST | /api/trigger/{channel} | Trigger video production |
 | POST | /api/topics/{channel}/generate | Generate new topics |
 | GET | /api/logs | Recent log lines |
 
 Run with `python dashboard/app.py`.
+
+### Transcript RAG
+
+Every produced video's script (hook + scene narrations + outro) is indexed from
+`content_db`'s `metadata_json["script"]` into a local SQLite store
+(`output/rag.db`, FTS5 + optional Ollama vectors). Produced videos are
+auto-indexed by the orchestrator; backfill/rebuild with:
+
+```bash
+python scripts/index_rag.py --all          # index every video with a script
+python scripts/index_rag.py --search "index funds"
+python scripts/index_rag.py --ask "What did we cover about compounding?"
+```
+
+Vector ranking is live when `EMBEDDINGS_BASE_URL` (default
+`http://localhost:11434`) hosts `RAG_EMBEDDING_MODEL` — otherwise search
+degrades gracefully to FTS-only keyword matching instead of failing.
 
 ## Estimated Costs
 
