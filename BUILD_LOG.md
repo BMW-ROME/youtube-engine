@@ -329,6 +329,18 @@ as deliberate drops (dead spec) rather than unfinished work.
   content.db can't break it. Full 10-stage happy path + SEO-outage survival path +
   retry-queue test all pass with zero network calls.
 
+- 2026-08-19: Post-audit correctness sweep (part 3 - stage statuses). The pipeline
+  status chain documented in content_db was only half-implemented: script_writer/
+  voice_gen/music_mixer/image_gen each self-wrote SCRIPTING/VOICING/MUSIC/IMAGING,
+  but ASSEMBLING/OPTIMIZING/UPLOADING were NEVER written, and a non-required-stage
+  failure (e.g. SEO outage) left the video row stuck at whatever status the last
+  module happened to write (verified: video 21 was stuck at 'IMAGING' forever).
+  pipeline.py now writes ASSEMBLING/OPTIMIZING/UPLOADING before those stages, marks
+  FAILED on the bottom-of-run failure branch, and aborts to FAILED (best-effort,
+  exception-safe) when a required stage raises inside _run_stage. Verified live in
+  the integration test: happy path -> PUBLISHED, SEO-outage path -> FAILED (was
+  'IMAGING').
+
 ## Rebuild Rule
 
 Every session: commit and push working code before closing, even if incomplete.

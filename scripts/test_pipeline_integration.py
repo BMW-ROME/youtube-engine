@@ -205,6 +205,10 @@ def test_get_next_topic_retry_queue() -> None:
 
     test_channel = "__retry_test__"
     content_db.init_db()
+    # Remove any rows a previous run of this test left behind (the channel is
+    # unique to this test, so real videos are never touched).
+    with content_db.get_connection() as conn:
+        conn.execute("DELETE FROM videos WHERE channel = ?", (test_channel,))
     assert content_db.get_next_topic(channel=test_channel) is None, (
         "Expected None with no FAILED videos for the test channel yet"
     )

@@ -83,8 +83,20 @@ def _run_stage(name: str, result: PipelineResult, func, *args, **kwargs):
         result.failed_stages.append(name)
         if name in REQUIRED_STAGES:
             logger.critical("Required stage '%s' failed. Aborting pipeline.", name)
+            _mark_failed(result, f"required stage '{name}' failed: {exc}")
             raise
         return None
+
+
+def _mark_failed(result: PipelineResult, message: str) -> None:
+    """Best-effort FAILED status write so a crashed run always lands in FAILED
+    (never stuck half-way through the stage chain). Never masks the original
+    error -- failures here are logged at debug level and swallowed."""
+    try:
+        if result.video_id is not None:
+            content_db.update_status(result.video_id, "FAILED", error_message=message)
+    except Exception as exc:  # noqa: BLE001 - status writes must never crash a run
+        logger.debug("pipeline: could not mark video %s FAILED: %s", result.video_id, exc)
 
 
 def run_pipeline(
@@ -190,6 +202,7 @@ def run_pipeline(
         try:
             from core.video_assembler import assemble_video, build_chapter_markers
             final_path = str(settings.content_path / "videos" / f"{video_id}.mp4")
+            content_db.update_status(video_id, "ASSEMBLING")
             result.final_video_path = _run_stage(
                 "assembly", result, assemble_video,
                 clip_paths=result.effect_clip_paths,
@@ -215,6 +228,7 @@ def run_pipeline(
             # Real runs use the same shared OpenAI-compatible chat client as
             # script_writer. SEO metadata is required before upload (stage 10 is
             # gated on seo_result), so it must never be silently skipped.
+            content_db.update_status(video_id, "OPTIMIZING")
             seo_client = clients.get("seo_chat_client") or OpenAIChatClient()
             result.seo_result = _run_stage(
                 "seo", result, optimize_seo,
@@ -253,6 +267,7 @@ def run_pipeline(
     if result.final_video_path and result.seo_result is not None:
         upload_mode = config.get("upload_mode", settings.upload_mode)
         try:
+            content_db.update_status(video_id, "UPLOADING")
             if upload_mode == "youtube_api":
                 from core.uploader import upload_video
                 result.upload_result = _run_stage(
@@ -277,6 +292,7 @@ def run_pipeline(
         content_db.update_status(video_id, "PUBLISHED")
         logger.info("Pipeline completed successfully for topic: %s", topic)
     else:
+        _mark_failed(result, "; ".join(result.failed_stages))
         logger.warning("Pipeline completed with failures in stages: %s", result.failed_stages)
 
     return result
