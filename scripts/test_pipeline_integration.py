@@ -170,6 +170,15 @@ def test_happy_path() -> None:
     assert result.final_video_path, "assembly stage produced no output"
     assert result.seo_result is not None, "seo stage produced no output"
     assert result.upload_result is not None, "upload stage produced no output"
+    assert result.chapter_markers and result.chapter_markers[0]["title"] == "Intro", (
+        f"LLM chapter_timestamps should be used, got {result.chapter_markers}"
+    )
+    assert result.chapter_markers[0]["timestamp_seconds"] == 0.0, (
+        "first chapter must start at 00:00"
+    )
+    assert result.seo_result.description.rstrip().endswith("[AFFILIATE_FINANCE_1]"), (
+        "finance channel's affiliate placeholder must be appended to the description"
+    )
     print("[PASS] test_happy_path: all 10 stages completed, zero failed_stages")
 
 

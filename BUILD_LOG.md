@@ -350,6 +350,20 @@ as deliberate drops (dead spec) rather than unfinished work.
   FAILED row retried via video_id becomes PUBLISHED on the same id with no
   duplicate row created.
 
+- 2026-08-19: Post-audit correctness sweep (part 5 - real chapters + affiliate).
+  Chapter markers are no longer fake ("Scene N" + hardcoded 4s): pipeline now
+  consumes the LLM's script.chapter_timestamps ({"time":"MM:SS","title"}) when
+  present, and falls back to probing the ACTUAL rendered effect-clip durations
+  (ffprobe via video_assembler._probe_duration) so markers track the real video.
+  Also wired the long-dead channel affiliate_placeholder: seo_optimizer now
+  appends each channel's placeholder (e.g. [AFFILIATE_FINANCE_1]) to the video
+  description exactly once, after the lead-gen CTA -- fulfilling the README's
+  monetization section that previously had no consumer. Verified in the
+  integration test: FakeScriptClient's LLM timestamps surface as real chapter
+  markers (Intro @ 00:00), the finance affiliate placeholder lands in the
+  description, and the empty-timestamps fallback builds markers from probed
+  4s clip durations (0.0/4.0/8.0).
+
 ## Rebuild Rule
 
 Every session: commit and push working code before closing, even if incomplete.

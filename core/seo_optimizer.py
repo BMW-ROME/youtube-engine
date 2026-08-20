@@ -241,6 +241,13 @@ def optimize_seo(
             if cta_text and not _is_unconfigured_placeholder(cta_text):
                 description = f"{description}\n\n{cta_text}"
 
+            # Channel-scoped affiliate placeholder (e.g. [AFFILIATE_FINANCE_1]).
+            # Appended AFTER the CTA, exactly once -- the LLM is told to never
+            # invent contact/link info, so we own its placement deterministically.
+            affiliate = getattr(channel, "affiliate_placeholder", None)
+            if affiliate and affiliate not in description:
+                description = f"{description}\n\n{affiliate}"
+
             pinned_comment = _truncate(data["pinned_comment"].strip(), 200)
             pinned_cta = _get_pinned_comment_cta()
             if pinned_cta and not _is_unconfigured_placeholder(pinned_cta):

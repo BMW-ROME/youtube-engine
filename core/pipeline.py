@@ -99,6 +99,62 @@ def _mark_failed(result: PipelineResult, message: str) -> None:
         logger.debug("pipeline: could not mark video %s FAILED: %s", result.video_id, exc)
 
 
+def _parse_mmss(value: Any) -> Optional[float]:
+    """Parse a clock string ('MM:SS' or 'HH:MM:SS') into seconds.
+    Returns None if the value isn't parseable."""
+    if not isinstance(value, str):
+        return None
+    try:
+        parts = value.strip().split(":")
+        if len(parts) == 2:
+            return float(int(parts[0]) * 60 + int(parts[1]))
+        if len(parts) == 3:
+            return float(int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2]))
+    except (TypeError, ValueError):
+        return None
+    return None
+
+
+def _build_chapter_markers(result: PipelineResult) -> list:
+    """Build REAL YouTube chapter markers. Prefers the LLM's
+    chapter_timestamps ({"time": "MM:SS", "title": ...}) carried on the script;
+    falls back to probing the actual rendered effect-clip durations so markers
+    still track the real video even when the model left timestamps empty."""
+    script = result.script
+
+    markers: list[dict] = []
+    for item in getattr(script, "chapter_timestamps", None) or []:
+        if not isinstance(item, dict):
+            continue
+        ts = _parse_mmss(item.get("time"))
+        if ts is None:
+            continue
+        if markers and ts < markers[-1]["timestamp_seconds"]:
+            continue
+        markers.append({
+            "timestamp_seconds": ts,
+            "title": str(item.get("title", "")).strip() or f"Scene {len(markers) + 1}",
+        })
+    if markers:
+        logger.info("pipeline: using %d LLM chapter_timestamps", len(markers))
+        return markers
+
+    scene_count = len(script.scenes)
+    durations: list[float] = []
+    try:
+        from core.video_assembler import _probe_duration
+        for clip in result.effect_clip_paths:
+            probed = _probe_duration(clip)
+            durations.append(probed if probed and probed > 0 else 4.0)
+    except Exception as exc:  # noqa: BLE001 - probing is best-effort
+        logger.warning("pipeline: clip duration probing unavailable (%s), using defaults", exc)
+    if len(durations) != scene_count:
+        durations = [4.0] * scene_count
+    titles = [f"Scene {i + 1}" for i in range(scene_count)]
+    from core.video_assembler import build_chapter_markers
+    return build_chapter_markers(durations, titles)
+
+
 def run_pipeline(
     topic: str,
     channel_codename: str = "finance",
@@ -209,7 +265,7 @@ def run_pipeline(
 
     if result.effect_clip_paths and result.voice_path:
         try:
-            from core.video_assembler import assemble_video, build_chapter_markers
+            from core.video_assembler import assemble_video
             final_path = str(settings.content_path / "videos" / f"{video_id}.mp4")
             content_db.update_status(video_id, "ASSEMBLING")
             result.final_video_path = _run_stage(
@@ -220,9 +276,7 @@ def run_pipeline(
                 music_path=result.music_path if result.music_path != result.voice_path else None,
             )
             if result.script is not None:
-                scene_titles = [f"Scene {i+1}" for i in range(len(result.script.scenes))]
-                scene_durations = [4.0] * len(result.script.scenes)
-                result.chapter_markers = build_chapter_markers(scene_durations, scene_titles)
+                result.chapter_markers = _build_chapter_markers(result)
             if result.final_video_path:
                 content_db.set_output_path(video_id, result.final_video_path)
         except ImportError as exc:
