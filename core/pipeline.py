@@ -104,16 +104,25 @@ def run_pipeline(
     channel_codename: str = "finance",
     config: Optional[dict] = None,
     clients: Optional[dict] = None,
+    video_id: Optional[int] = None,
 ) -> PipelineResult:
+    """Run the full pipeline for a topic. By default a fresh video row is
+    created (QUEUED). Pass `video_id` to RE-RUN an existing row in place --
+    used by the orchestrator's failed-retry job so a retry updates the
+    original row (PUBLISHED on success, FAILED on failure) instead of
+    creating a duplicate video every 30 minutes."""
     config = config or {}
     clients = clients or {}
     channel = get_channel(channel_codename)
     result = PipelineResult(topic=topic, channel_codename=channel_codename)
 
     content_db.init_db()
-    video_id = content_db.create_video(
-        channel=channel.codename, topic=topic, video_mode=channel.video_mode
-    )
+    if video_id is None:
+        video_id = content_db.create_video(
+            channel=channel.codename, topic=topic, video_mode=channel.video_mode
+        )
+    else:
+        content_db.update_status(video_id, "QUEUED")
     result.video_id = video_id
 
     try:

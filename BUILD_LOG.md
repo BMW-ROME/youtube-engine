@@ -341,6 +341,15 @@ as deliberate drops (dead spec) rather than unfinished work.
   the integration test: happy path -> PUBLISHED, SEO-outage path -> FAILED (was
   'IMAGING').
 
+- 2026-08-19: Post-audit correctness sweep (part 4 - failed-retry dedupe).
+  run_pipeline(..., video_id=None) can now RE-RUN an existing video row in place
+  (reuses the original id, resets status to QUEUED, never touches retry_count).
+  orchestrator.run_once() passes it through, and run_failed_retry() increments
+  retry_count then re-runs the ORIGINAL row instead of calling run_once(topic)
+  which used to spawn a brand-new video row every 30 minutes. Verified live: a
+  FAILED row retried via video_id becomes PUBLISHED on the same id with no
+  duplicate row created.
+
 ## Rebuild Rule
 
 Every session: commit and push working code before closing, even if incomplete.

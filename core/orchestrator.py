@@ -100,12 +100,19 @@ def _index_result(result: PipelineResult) -> None:
                        getattr(result, "video_id", None), exc)
 
 
-def run_once(topic: Optional[str] = None, channel_codename: Optional[str] = None) -> Optional[PipelineResult]:
-    """Run a single pipeline pass, catching any error so callers never crash."""
+def run_once(
+    topic: Optional[str] = None,
+    channel_codename: Optional[str] = None,
+    video_id: Optional[int] = None,
+) -> Optional[PipelineResult]:
+    """Run a single pipeline pass, catching any error so callers never crash.
+    `video_id` re-runs an existing row in place (used by the failed-retry job)."""
     chosen_topic = topic or _next_topic(channel_codename=channel_codename)
     logger.info("Orchestrator triggering pipeline run for channel=%s topic: %s", channel_codename, chosen_topic)
     try:
-        result = run_pipeline(chosen_topic, channel_codename=channel_codename or "finance")
+        result = run_pipeline(
+            chosen_topic, channel_codename=channel_codename or "finance", video_id=video_id
+        )
         _persist_result(result)
         if result.success:
             logger.info("Run succeeded for channel=%s topic: %s", channel_codename, chosen_topic)
@@ -164,14 +171,19 @@ def run_replenishment() -> None:
 
 
 def run_failed_retry() -> None:
-    """Every-30-min job: re-run FAILED videos that haven't exhausted retries."""
+    """Every-30-min job: re-run FAILED videos that haven't exhausted retries.
+    Retries the ORIGINAL row in place (incrementing retry_count and reusing its
+    video_id) so a retried video never spawns a duplicate row -- on success the
+    row becomes PUBLISHED, on failure it stays FAILED and re-enters this queue
+    until the retry budget is exhausted."""
     try:
         from core import content_db
         failed = content_db.get_failed_videos(max_retries=3)
         for record in failed:
             logger.info("Retrying failed video id=%s topic=%r channel=%s",
                         record.id, record.topic, record.channel)
-            run_once(topic=record.topic, channel_codename=record.channel)
+            content_db.increment_retry(record.id)
+            run_once(topic=record.topic, channel_codename=record.channel, video_id=record.id)
     except Exception:
         logger.error("Failed-retry job failed:\n%s", traceback.format_exc())
 
