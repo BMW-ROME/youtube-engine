@@ -1,0 +1,12 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"control-plane/results.schema.json",
+  "type":"object","additionalProperties":false,
+  "required":["schema_version","run_id","success","completed_stages","failed_stages","outputs"],
+  "properties":{
+    "schema_version":{"const":"1.0"},"run_id":{"type":"string"},"success":{"type":"boolean"},
+    "completed_stages":{"type":"array","items":{"type":"string"}},
+    "failed_stages":{"type":"array","items":{"type":"string"}},
+    "outputs":{"type":"object","additionalProperties":true},"video_id":{"type":["integer","null"]}
+  }
+}
