@@ -1,0 +1,12 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"control-plane/checkpoint.schema.json",
+  "type":"object","additionalProperties":false,
+  "required":["schema_version","checkpoint_id","run_id","stage","attempt","created_at","verified","resume_from","artifacts"],
+  "properties":{
+    "schema_version":{"const":"1.0"},"checkpoint_id":{"type":"string"},"run_id":{"type":"string"},
+    "stage":{"type":"string"},"attempt":{"type":"integer","minimum":1},"created_at":{"type":"string","format":"date-time"},
+    "verified":{"const":true},"resume_from":{"type":"string"},
+    "artifacts":{"type":"array","items":{"type":"string"}}
+  }
+}
