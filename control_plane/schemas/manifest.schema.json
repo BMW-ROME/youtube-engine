@@ -1,0 +1,16 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"control-plane/manifest.schema.json",
+  "type":"object","additionalProperties":false,
+  "required":["schema_version","run_id","project","operation","created_at","controller_version","inputs"],
+  "properties":{
+    "schema_version":{"const":"1.0"},
+    "run_id":{"type":"string","pattern":"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{6}Z-[0-9a-f]{8}$"},
+    "project":{"const":"helping-others-with-my-voice"},
+    "operation":{"enum":["youtube_production","voice_analysis","e2e_validation"]},
+    "created_at":{"type":"string","format":"date-time"},
+    "controller_version":{"type":"string"},
+    "inputs":{"type":"object","additionalProperties":true},
+    "source_refs":{"type":"object","additionalProperties":true}
+  }
+}
