@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Business Lab Story",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "run_id",
+    "hook",
+    "problem",
+    "experiment",
+    "evidence",
+    "result",
+    "economic_implication",
+    "cta"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "experiment_id": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "hook": {
+      "type": "string"
+    },
+    "problem": {
+      "type": "string"
+    },
+    "experiment": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "result": {
+      "type": "string"
+    },
+    "economic_implication": {
+      "type": "string"
+    },
+    "cta": {
+      "type": "string"
+    },
+    "next_experiment": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false
+}
