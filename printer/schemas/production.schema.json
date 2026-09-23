@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Business Lab Production Manifest",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "run_id",
+    "script",
+    "shots"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "experiment_id": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "script": {
+      "type": "object",
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        }
+      }
+    },
+    "shots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "shot_id",
+          "purpose",
+          "visual_prompt"
+        ],
+        "properties": {
+          "shot_id": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "visual_prompt": {
+            "type": "string"
+          },
+          "duration_seconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "backend": {
+            "type": "string"
+          },
+          "references": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "voice": {
+      "type": "object"
+    },
+    "thumbnail": {
+      "type": "object"
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}
