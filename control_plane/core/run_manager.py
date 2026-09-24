@@ -1,5 +1,4 @@
 """Durable run state for Control Plane v0.1."""
-
 from __future__ import annotations
 import json, os, secrets
 from datetime import datetime, timezone
@@ -29,10 +28,10 @@ class RunManager:
 
     def status(self, run_id): return json.loads((self._dir(run_id)/"status.json").read_text())
 
-    def checkpoint(self, run_id: str, stage: str, artifacts: list[str]):
+    def checkpoint(self, run_id: str, stage: str, artifacts: list[str], resume_from: str | None = None):
         d=self._dir(run_id); s=self.status(run_id)
         cid=f"{stage}-{s['attempt']}"
-        cp={"schema_version":"1.0","checkpoint_id":cid,"run_id":run_id,"stage":stage,"attempt":s["attempt"],"created_at":utcnow(),"verified":True,"resume_from":next_stage(stage),"artifacts":artifacts}
+        cp={"schema_version":"1.0","checkpoint_id":cid,"run_id":run_id,"stage":stage,"attempt":s["attempt"],"created_at":utcnow(),"verified":True,"resume_from":resume_from if resume_from is not None else next_stage(stage),"artifacts":artifacts}
         path=d/"checkpoints"/f"{cid}.json"; path.write_text(json.dumps(cp,indent=2)+"\n")
         self.event(run_id,"checkpoint_created",stage,{"checkpoint_id":cid,"artifacts":artifacts})
         s.update(stage=stage,last_checkpoint=str(path.relative_to(d)),resumable=True,updated_at=utcnow()); self._write_status(d,s)
