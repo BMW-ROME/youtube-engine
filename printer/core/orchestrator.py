@@ -50,7 +50,8 @@ class PrinterOrchestrator:
         output = dict(handler(payload) or {})
         artifact = self._write_stage_artifact(run_id, stage, output)
         output["artifact"] = artifact
-        self.run_manager.checkpoint(run_id, stage, [artifact])
+        resume_from = PRINTER_STAGES[PRINTER_STAGES.index(stage) + 1] if PRINTER_STAGES.index(stage) + 1 < len(PRINTER_STAGES) else None
+        self.run_manager.checkpoint(run_id, stage, [artifact], resume_from=resume_from)
         return output
 
     def _write_stage_artifact(self, run_id: str, stage: str, payload: Mapping[str, Any]) -> str:
