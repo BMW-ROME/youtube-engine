@@ -1,10 +1,5 @@
-"""AI Business Lab printer orchestration layer.
-
-Phase 5C: deterministic stage orchestration around the existing Control Plane.
-Media execution remains owned by youtube-engine.
-"""
+"""AI Business Lab printer orchestration layer with checkpoint-aware recovery."""
 from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import Any, Callable, Mapping
@@ -13,34 +8,18 @@ PRINTER_STAGES = (
     "intake", "research", "experiment", "execution", "evidence",
     "story", "production", "qa", "publish_package", "learning",
 )
-
 ARTIFACT_DIRS = {
-    "research": "research",
-    "experiment": "experiment",
-    "execution": "experiment",
-    "evidence": "evidence",
-    "story": "story",
-    "production": "video",
-    "qa": "publish",
-    "publish_package": "publish",
-    "learning": "analytics",
+    "research": "research", "experiment": "experiment", "execution": "experiment",
+    "evidence": "evidence", "story": "story", "production": "video",
+    "qa": "publish", "publish_package": "publish", "learning": "analytics",
 }
 
 class PrinterError(RuntimeError):
     pass
 
 class PrinterOrchestrator:
-    """Run printer stages while preserving run/experiment lineage.
-
-    handlers are injected so production backends, including Higgsfield and
-    youtube-engine, remain replaceable and testable.
-    """
-    def __init__(
-        self,
-        run_manager: Any,
-        root: str | Path,
-        handlers: Mapping[str, Callable[[dict[str, Any]], Mapping[str, Any]]] | None = None,
-    ) -> None:
+    def __init__(self, run_manager: Any, root: str | Path,
+                 handlers: Mapping[str, Callable[[dict[str, Any]], Mapping[str, Any]]] | None = None) -> None:
         self.run_manager = run_manager
         self.root = Path(root)
         self.handlers = dict(handlers or {})
@@ -48,8 +27,15 @@ class PrinterOrchestrator:
     def execute(self, run_id: str, experiment: Mapping[str, Any], *, stop_after: str | None = None) -> dict[str, Any]:
         self._validate_experiment(experiment, run_id)
         self._ensure_started(run_id)
-        result: dict[str, Any] = {"run_id": run_id, "experiment_id": experiment["experiment_id"], "completed_stages": []}
-        for stage in PRINTER_STAGES:
+        status = self.run_manager.status(run_id)
+        start_index = PRINTER_STAGES.index(status["stage"]) + 1 if status.get("stage") in PRINTER_STAGES else 0
+        result = {
+            "run_id": run_id,
+            "experiment_id": experiment["experiment_id"],
+            "completed_stages": [],
+            "resumed_from": PRINTER_STAGES[start_index] if start_index < len(PRINTER_STAGES) else None,
+        }
+        for stage in PRINTER_STAGES[start_index:]:
             payload = dict(experiment)
             payload.update({"run_id": run_id, "stage": stage})
             output = self._run_stage(run_id, stage, payload)
