@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "experiment_id": "exp-ai-automation-001",
+  "run_id": "RUN_ASSIGNED_AT_EXECUTION",
+  "problem": "Small businesses often pay for software while still doing repetitive work manually.",
+  "target_viewer": "small-business owner, freelancer, entrepreneur, ambitious worker",
+  "hypothesis": "A carefully selected AI workflow can reduce the time required for one repetitive business task without creating unacceptable manual cleanup.",
+  "baseline": {
+    "task": "One repeatable administrative task",
+    "measurement": "Time required to complete the task manually"
+  },
+  "intervention": {
+    "type": "AI/software automation",
+    "measurement": "Time required plus human cleanup time and direct tool cost"
+  },
+  "procedure": [
+    "Record a baseline run.",
+    "Run the same task through the selected AI/software workflow.",
+    "Record elapsed time and direct cost.",
+    "Record errors, corrections, and human intervention.",
+    "Compare outputs against the baseline."
+  ],
+  "success_metrics": [
+    {"name": "time_saved_minutes", "target": "positive"},
+    {"name": "human_cleanup_minutes", "target": "acceptable"},
+    {"name": "direct_cost", "target": "known"},
+    {"name": "output_quality", "target": "meets_predefined_standard"}
+  ],
+  "stopping_conditions": [
+    "The experiment cannot produce a reproducible baseline.",
+    "The intervention requires sensitive personal data.",
+    "Direct cost exceeds the predetermined test budget."
+  ],
+  "constraints": [
+    "No fabricated results.",
+    "No unsupported ROI claims.",
+    "No sensitive personal data."
+  ]
+}
