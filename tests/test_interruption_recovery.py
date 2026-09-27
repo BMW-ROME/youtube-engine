@@ -5,17 +5,18 @@ from control_plane.core.run_manager import RunManager
 class InterruptionRecoveryTests(unittest.TestCase):
     def test_process_interruption_leaves_recoverable_run(self):
         with tempfile.TemporaryDirectory() as td:
-            root=Path(td); script=root/"child.py"
-            script.write_text("""from control_plane.core.run_manager import RunManager
+            root=Path(td)
+            script="""from control_plane.core.run_manager import RunManager
 import os, signal, sys
 m=RunManager(sys.argv[1]); r=m.create('e2e_validation', {'topic':'recovery-test'})
 m.start(r)
 d=m.root/r/'artifacts'/'script.txt'; d.write_text('durable artifact')
 m.checkpoint(r,'script',[str(d.relative_to(m.root/r))])
 os.kill(os.getpid(), signal.SIGTERM)
-""")
-            p=subprocess.run([sys.executable,str(script),str(root)],capture_output=True)
-            self.assertNotEqual(p.returncode,0)
+"""
+            p=subprocess.run([sys.executable,"-c",script,str(root)],
+                             cwd=Path(__file__).resolve().parents[1], capture_output=True, timeout=30)
+            self.assertNotEqual(p.returncode,0, p.stderr.decode(errors="replace"))
             runs=list(root.iterdir()); self.assertEqual(len(runs),1)
             run=runs[0]; s=json.loads((run/'status.json').read_text())
             self.assertEqual(s['lifecycle'],'RUNNING')

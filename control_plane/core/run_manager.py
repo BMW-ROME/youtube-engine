@@ -34,7 +34,7 @@ class RunManager:
         cp={"schema_version":"1.0","checkpoint_id":cid,"run_id":run_id,"stage":stage,"attempt":s["attempt"],"created_at":utcnow(),"verified":True,"resume_from":resume_from if resume_from is not None else next_stage(stage),"artifacts":artifacts}
         path=d/"checkpoints"/f"{cid}.json"; path.write_text(json.dumps(cp,indent=2)+"\n")
         self.event(run_id,"checkpoint_created",stage,{"checkpoint_id":cid,"artifacts":artifacts})
-        s.update(stage=stage,last_checkpoint=str(path.relative_to(d)),resumable=True,updated_at=utcnow()); self._write_status(d,s)
+        s.update(stage=stage,last_checkpoint=path.relative_to(d).as_posix(),resumable=True,updated_at=utcnow()); self._write_status(d,s)
 
     def interrupt(self, run_id: str):
         d=self._dir(run_id); s=self.status(run_id); require_transition(s["lifecycle"],"INTERRUPTED")
@@ -61,13 +61,15 @@ class RunManager:
         (d/"results.json").write_text(json.dumps({"schema_version":"1.0","run_id":run_id,"success":True,"completed_stages":[],"failed_stages":[],"outputs":outputs or {}},indent=2)+"\n")
 
     def event(self,run_id,event,stage,data):
-        p=self._dir(run_id)/"events.jsonl"; seq=sum(1 for _ in p.open())+1
+        p=self._dir(run_id)/"events.jsonl"
+        with p.open() as f:
+            seq=sum(1 for _ in f)+1
         rec={"schema_version":"1.0","event_id":secrets.token_hex(8),"run_id":run_id,"sequence":seq,"timestamp":utcnow(),"event":event,"stage":stage,"attempt":self.status(run_id)["attempt"],"data":data}
         with p.open("a") as f: f.write(json.dumps(rec,separators=(",",":"))+"\n")
 
     def latest_checkpoint(self,run_id):
-        d=self._dir(run_id); cps=sorted((d/"checkpoints").glob("*.json"),key=lambda p:p.stat().st_mtime)
-        return json.loads(cps[-1].read_text()) if cps else None
+        d=self._dir(run_id); checkpoint=self.status(run_id)["last_checkpoint"]
+        return json.loads((d/checkpoint).read_text()) if checkpoint else None
 
     def _dir(self,run_id):
         d=self.root/run_id

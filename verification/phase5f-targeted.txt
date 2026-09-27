@@ -1,0 +1,16 @@
+test_full_run_creates_lineage_for_every_stage (test_printer_orchestrator.PrinterOrchestratorTests.test_full_run_creates_lineage_for_every_stage) ... ok
+test_handler_failure_does_not_mark_run_successful (test_printer_orchestrator.PrinterOrchestratorTests.test_handler_failure_does_not_mark_run_successful) ... ok
+test_stop_after_creates_checkpoint (test_printer_orchestrator.PrinterOrchestratorTests.test_stop_after_creates_checkpoint) ... ok
+test_stop_after_final_stage_still_succeeds (test_printer_orchestrator.PrinterOrchestratorTests.test_stop_after_final_stage_still_succeeds) ... ok
+test_validation_rejects_mismatched_run (test_printer_orchestrator.PrinterOrchestratorTests.test_validation_rejects_mismatched_run) ... ok
+test_manifest_run_id_is_enforced (test_printer_production.PrinterProductionTests.test_manifest_run_id_is_enforced) ... ok
+test_mock_backend_renders_without_provider_credits (test_printer_production.PrinterProductionTests.test_mock_backend_renders_without_provider_credits) ... ok
+test_provider_failure_isolated_from_manifest_contract (test_printer_production.PrinterProductionTests.test_provider_failure_isolated_from_manifest_contract) ... ok
+test_deliberate_interruption_recovers_from_last_verified_checkpoint (test_printer_recovery.PrinterRecoveryTests.test_deliberate_interruption_recovers_from_last_verified_checkpoint) ... ok
+test_recovery_after_final_checkpoint_only_finalizes (test_printer_recovery.PrinterRecoveryTests.test_recovery_after_final_checkpoint_only_finalizes) ... ok
+test_recovery_refuses_missing_checkpoint_artifact (test_printer_recovery.PrinterRecoveryTests.test_recovery_refuses_missing_checkpoint_artifact) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 1.492s
+
+OK

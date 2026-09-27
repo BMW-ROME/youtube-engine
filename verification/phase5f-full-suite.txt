@@ -1,0 +1,24 @@
+test_allowed_lifecycle_transitions (test_control_plane_state_machine.ControlPlaneStateMachineTests.test_allowed_lifecycle_transitions) ... ok
+test_illegal_transition_is_rejected (test_control_plane_state_machine.ControlPlaneStateMachineTests.test_illegal_transition_is_rejected) ... ok
+test_schema_files_are_valid_json (test_control_plane_state_machine.ControlPlaneStateMachineTests.test_schema_files_are_valid_json) ... ok
+test_stage_order_matches_youtube_engine_contract (test_control_plane_state_machine.ControlPlaneStateMachineTests.test_stage_order_matches_youtube_engine_contract) ... ok
+test_terminal_states_have_no_outgoing_edges (test_control_plane_state_machine.ControlPlaneStateMachineTests.test_terminal_states_have_no_outgoing_edges) ... ok
+test_process_interruption_leaves_recoverable_run (test_interruption_recovery.InterruptionRecoveryTests.test_process_interruption_leaves_recoverable_run) ... ok
+test_full_run_creates_lineage_for_every_stage (test_printer_orchestrator.PrinterOrchestratorTests.test_full_run_creates_lineage_for_every_stage) ... ok
+test_handler_failure_does_not_mark_run_successful (test_printer_orchestrator.PrinterOrchestratorTests.test_handler_failure_does_not_mark_run_successful) ... ok
+test_stop_after_creates_checkpoint (test_printer_orchestrator.PrinterOrchestratorTests.test_stop_after_creates_checkpoint) ... ok
+test_stop_after_final_stage_still_succeeds (test_printer_orchestrator.PrinterOrchestratorTests.test_stop_after_final_stage_still_succeeds) ... ok
+test_validation_rejects_mismatched_run (test_printer_orchestrator.PrinterOrchestratorTests.test_validation_rejects_mismatched_run) ... ok
+test_manifest_run_id_is_enforced (test_printer_production.PrinterProductionTests.test_manifest_run_id_is_enforced) ... ok
+test_mock_backend_renders_without_provider_credits (test_printer_production.PrinterProductionTests.test_mock_backend_renders_without_provider_credits) ... ok
+test_provider_failure_isolated_from_manifest_contract (test_printer_production.PrinterProductionTests.test_provider_failure_isolated_from_manifest_contract) ... ok
+test_deliberate_interruption_recovers_from_last_verified_checkpoint (test_printer_recovery.PrinterRecoveryTests.test_deliberate_interruption_recovers_from_last_verified_checkpoint) ... ok
+test_recovery_after_final_checkpoint_only_finalizes (test_printer_recovery.PrinterRecoveryTests.test_recovery_after_final_checkpoint_only_finalizes) ... ok
+test_recovery_refuses_missing_checkpoint_artifact (test_printer_recovery.PrinterRecoveryTests.test_recovery_refuses_missing_checkpoint_artifact) ... ok
+test_resume_from_verified_checkpoint (test_recovery_contract.RecoveryContractTests.test_resume_from_verified_checkpoint) ... ok
+test_adapter_preserves_pipeline_result_contract (test_youtube_adapter.YoutubeAdapterTests.test_adapter_preserves_pipeline_result_contract) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 1.797s
+
+OK

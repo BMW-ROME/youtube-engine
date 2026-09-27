@@ -27,8 +27,10 @@ class PrinterOrchestrator:
     def execute(self, run_id: str, experiment: Mapping[str, Any], *, stop_after: str | None = None) -> dict[str, Any]:
         self._validate_experiment(experiment, run_id)
         self._ensure_started(run_id)
-        status = self.run_manager.status(run_id)
-        start_index = PRINTER_STAGES.index(status["stage"]) + 1 if status.get("stage") in PRINTER_STAGES else 0
+        checkpoint = self.run_manager.latest_checkpoint(run_id)
+        # Recovery status names the next stage; the checkpoint names the one
+        # actually completed. Resume from that durable completion boundary.
+        start_index = PRINTER_STAGES.index(checkpoint["stage"]) + 1 if checkpoint else 0
         result = {
             "run_id": run_id,
             "experiment_id": experiment["experiment_id"],
@@ -41,8 +43,9 @@ class PrinterOrchestrator:
             output = self._run_stage(run_id, stage, payload)
             result["completed_stages"].append(stage)
             result[stage] = output
-            if stop_after == stage:
+            if stop_after == stage and stage != PRINTER_STAGES[-1]:
                 return result
+        self.run_manager.succeed(run_id, outputs=result)
         return result
 
     def _run_stage(self, run_id: str, stage: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -60,7 +63,7 @@ class PrinterOrchestrator:
         path.mkdir(parents=True, exist_ok=True)
         target = path / f"{stage}.json"
         target.write_text(json.dumps(dict(payload), indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        return str(target.relative_to(self.root / run_id))
+        return target.relative_to(self.root / run_id).as_posix()
 
     @staticmethod
     def _default_handler(payload: dict[str, Any]) -> dict[str, Any]:
