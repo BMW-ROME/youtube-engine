@@ -1,0 +1,65 @@
+{
+  "run_id": "2026-09-27T052005Z-442db45e",
+  "gate": "local-engineering-e2e",
+  "status": "passed",
+  "completed_stages": [
+    "intake",
+    "research",
+    "experiment",
+    "execution",
+    "evidence",
+    "story",
+    "production",
+    "qa",
+    "publish_package",
+    "learning"
+  ],
+  "attempt": 2,
+  "measurements": {
+    "recover": {
+      "calls": 10,
+      "final_lifecycle": "SUCCEEDED",
+      "log": "recover/calls.jsonl",
+      "replayed_stages": 0,
+      "sha256": "3f4d7689b3dd5592441b39fffbc3616d754c620c4d30a5451650bec712e0ab63",
+      "stages": [
+        "intake",
+        "research",
+        "experiment",
+        "execution",
+        "evidence",
+        "story",
+        "production",
+        "qa",
+        "publish_package",
+        "learning"
+      ]
+    },
+    "restart": {
+      "calls": 15,
+      "final_lifecycle": "SUCCEEDED",
+      "log": "restart/calls.jsonl",
+      "replayed_stages": 5,
+      "sha256": "f457bd153ff9ffb2885843bb6eb3ab23ee84d1bbba14215c27f006ea1730a789",
+      "stages": [
+        "intake",
+        "research",
+        "experiment",
+        "execution",
+        "evidence",
+        "intake",
+        "research",
+        "experiment",
+        "execution",
+        "evidence",
+        "story",
+        "production",
+        "qa",
+        "publish_package",
+        "learning"
+      ]
+    }
+  },
+  "publication_allowed": false,
+  "scope": "real local recovery measurements with mock production; no live publishing or revenue proof"
+}
