@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "phase": "6",
+  "case_id": "phase6-recovery-pilot-001",
+  "source_run_id": "2026-09-27T052005Z-442db45e",
+  "viewer_question": "When an AI workflow gets interrupted, can durable checkpoints prevent already-completed stages from being repeated?",
+  "narration": {
+    "path": "phase6/narration.md",
+    "voice_owner": "user",
+    "status": "awaiting_user_recording",
+    "synthetic_replacement_allowed": false
+  },
+  "evidence": {
+    "restart_stage_calls": 15,
+    "recover_stage_calls": 10,
+    "repeated_stages_restart": 5,
+    "replayed_completed_stages_recover": 0,
+    "measured_difference_stage_calls": 5,
+    "final_lifecycle": "SUCCEEDED",
+    "attempt": 2,
+    "unsupported_claims": [
+      "time_saved",
+      "money_saved",
+      "profit",
+      "audience_response",
+      "arbitrary_mid_stage_crash_safety"
+    ]
+  },
+  "production": {
+    "backend_target": "higgsfield/seedance_2_5",
+    "requested_clip": {
+      "duration_seconds": 5,
+      "aspect_ratio": "16:9",
+      "resolution": "720p",
+      "audio": false,
+      "purpose": "visualize interruption -> checkpoint preservation -> resume without restart"
+    },
+    "estimated_credits": 35,
+    "provider_submission_status": "blocked",
+    "provider_error": "Requires plus plan or higher."
+  },
+  "qa": {
+    "publication_allowed": false,
+    "uploaded": false,
+    "blockers": [
+      "user narration not yet recorded",
+      "real provider media not yet produced",
+      "final media evidence QA pending",
+      "production time measurement incomplete"
+    ]
+  }
+}
