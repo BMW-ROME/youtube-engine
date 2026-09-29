@@ -1,0 +1,74 @@
+{
+  "schema_version": "0.1",
+  "project": "BMW-ROME/youtube-engine",
+  "governing_goal": "Build a production-grade autonomous YouTube engine whose technical and project state survives interruptions, model limits, context ceilings, and worker handoffs without expensive reconstruction.",
+  "definition_of_done": [
+    "Control Plane execution and recovery contracts are verified",
+    "Workspace continuity state is durable and model-independent",
+    "A fresh worker can resume from the continuity capsule plus named files",
+    "Work is decomposed into bounded packets with explicit verification",
+    "Continuity machinery does not require bypassing provider limits"
+  ],
+  "phase": "continuity-bootstrap",
+  "status": "active",
+  "active_workstream": "control-plane-resiliency",
+  "current_task": "Install and validate Goal Continuity Stack v0.1 on top of Control Plane v0.1",
+  "completed": [
+    "Control Plane v0.1 vertical slice exists on control-plane-v0.1 / PR #10",
+    "Workspace continuity architecture defined",
+    "Codex skill bundle added on workspace-continuity-v0.1"
+  ],
+  "verified": [
+    "PR #10 is open and draft",
+    "PR #10 head is control-plane-v0.1",
+    "Control Plane includes state machine, RunManager, adapter, schemas, and recovery tests"
+  ],
+  "in_progress": [
+    "Bootstrap durable workspace state",
+    "Add validation tooling and continuity tests"
+  ],
+  "blocked": [],
+  "next_actions": [
+    "Run continuity bootstrap/validation tests",
+    "Verify a fresh-worker resume simulation",
+    "Review whether continuity files should merge with or remain orthogonal to runtime Control Plane state"
+  ],
+  "dependencies": [
+    "PR #10 Control Plane v0.1 branch"
+  ],
+  "risks": [
+    "Project continuity state can drift from actual repository state unless validation is enforced",
+    "Overly broad handoff capsules can recreate the token problem they are designed to solve"
+  ],
+  "assumptions": [
+    "Repository-local .codex/skills directories are discoverable or can be copied into the user's Codex skill path",
+    "Control Plane runtime state and workspace project state should remain separate but interoperable"
+  ],
+  "decisions": [
+    "Layer workspace continuity on top of control-plane-v0.1 rather than creating a competing runtime recovery system",
+    "Use repository state as the durable source of truth",
+    "Do not depend on exact remaining token/message allowance"
+  ],
+  "artifacts": [
+    ".codex/skills/goal-control-plane/SKILL.md",
+    ".codex/skills/context-budget-governor/SKILL.md",
+    ".codex/skills/continuity-checkpoint/SKILL.md",
+    ".codex/skills/limit-resilient-executor/SKILL.md",
+    ".workspace-control/state.json",
+    ".workspace-control/handoff.md"
+  ],
+  "relevant_files": [
+    "control_plane/core/run_manager.py",
+    "control_plane/core/state_machine.py",
+    "tests/test_interruption_recovery.py",
+    "tests/test_recovery_contract.py"
+  ],
+  "relevant_commits": [
+    "5ccefba0929dcabb635291738debff3fd2f245d5"
+  ],
+  "tests": [
+    "tests/test_workspace_continuity.py"
+  ],
+  "last_known_good_state": "PR #10 head 5ccefba0929dcabb635291738debff3fd2f245d5 is mergeable and contains the Control Plane v0.1 recovery foundation.",
+  "updated_at": "2026-09-28T21:31:00-04:00"
+}
