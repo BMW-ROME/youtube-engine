@@ -109,9 +109,10 @@ def parse_scalar(value: str) -> str | bool | int:
 def parse_simple_yaml(path: Path) -> dict[str, object]:
     """Parse the small work-packet YAML subset used by this repository.
 
-    The parser intentionally supports only top-level scalar keys and top-level
-    lists. That keeps the validator dependency-free and prevents a fresh worker
-    from needing PyYAML before it can validate continuity state.
+    The parser intentionally supports only top-level scalar keys, top-level
+    lists, and one-level nested scalar maps. That keeps the validator
+    dependency-free and prevents a fresh worker from needing PyYAML before it
+    can validate continuity state.
     """
     data: dict[str, object] = {}
     current_key: str | None = None
@@ -125,10 +126,22 @@ def parse_simple_yaml(path: Path) -> dict[str, object]:
         if line.startswith("  - "):
             if current_key is None:
                 raise ValidationError(f"{path}: list item before key at line {line_no}")
-            data.setdefault(current_key, [])
-            if not isinstance(data[current_key], list):
-                raise ValidationError(f"{path}: key {current_key!r} mixes scalar and list values")
+            if data.get(current_key) == []:
+                data[current_key] = []
+            if not isinstance(data.get(current_key), list):
+                raise ValidationError(f"{path}: key {current_key!r} mixes scalar/map and list values")
             data[current_key].append(parse_scalar(stripped[2:].strip()))
+            continue
+
+        if line.startswith("  ") and ":" in stripped:
+            if current_key is None:
+                raise ValidationError(f"{path}: nested value before key at line {line_no}")
+            nested_key, nested_value = stripped.split(":", 1)
+            if data.get(current_key) == []:
+                data[current_key] = {}
+            if not isinstance(data.get(current_key), dict):
+                raise ValidationError(f"{path}: key {current_key!r} mixes scalar/list and map values")
+            data[current_key][nested_key.strip()] = parse_scalar(nested_value.strip())
             continue
 
         if not line.startswith(" ") and ":" in line:
