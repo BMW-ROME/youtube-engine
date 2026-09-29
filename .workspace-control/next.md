@@ -1,15 +1,24 @@
 # Next
 
-## Active packet
+## Active phase
 
-`.workspace-control/work-packets/WP-002.yaml`
+Merge-readiness review for PR #11.
+
+## Completed packets
+
+- `.workspace-control/work-packets/WP-001.yaml`
+- `.workspace-control/work-packets/WP-002.yaml`
 
 ## Immediate
 
-1. Extend `scripts/bootstrap_workspace_control.py` to validate active work-packet input paths and relevant state references.
-2. Add negative tests proving stale/missing references fail validation.
-3. Add deterministic checkpoint refresh/update behavior so state and handoff are less dependent on manual edits.
-4. Run the continuity CI gate.
+1. Review final PR #11 diff for accidental bloat or stacked-PR integration concerns.
+2. Preserve the `tests/test_interruption_recovery.py` correction when resolving PR #10 -> PR #11.
+3. Confirm local Codex skill discovery behavior or copy/link the four skills into the configured user-level skills directory.
+
+## Verified gates
+
+- GitHub Actions run `36514342274`: validation passed; 12 tests passed.
+- GitHub Actions run `36516118090`: validation passed; 16 tests passed.
 
 ## Integration follow-up
 
