@@ -1,18 +1,16 @@
 # Next
 
+## Active packet
+
+`.workspace-control/work-packets/WP-002.yaml`
+
 ## Immediate
 
-1. Run `pytest -q tests/test_workspace_continuity.py`.
-2. Run the existing Control Plane recovery tests.
-3. Simulate a fresh worker by reading only:
-   - `.workspace-control/state.json`
-   - `.workspace-control/handoff.md`
-   - `.workspace-control/work-packets/WP-001.yaml`
-   - the exact source/test files referenced by WP-001
-4. Confirm the worker can identify the next action without prior chat context.
+1. Extend `scripts/bootstrap_workspace_control.py` to validate active work-packet input paths and relevant state references.
+2. Add negative tests proving stale/missing references fail validation.
+3. Add deterministic checkpoint refresh/update behavior so state and handoff are less dependent on manual edits.
+4. Run the continuity CI gate.
 
-## After verification
+## Integration follow-up
 
-- Add a small CLI command for checkpoint refresh if manual state editing proves error-prone.
-- Decide whether CI should validate state schema and work-packet references on every continuity-related PR.
-- Reuse the bundle in the next repository/project only after the proving-ground resume test passes.
+The proving ground corrected `tests/test_interruption_recovery.py`, originally introduced by PR #10. Preserve that correction when resolving the stacked PR sequence.
