@@ -26,6 +26,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Install test runner
+        run: python -m pip install --disable-pip-version-check pytest
       - name: Validate workspace control
         run: python scripts/bootstrap_workspace_control.py
       - name: Run continuity and recovery contracts
