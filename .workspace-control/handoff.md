@@ -4,26 +4,28 @@
 Make BMW-ROME/youtube-engine production-grade while preserving project progress across model limits, context ceilings, interruptions, and worker/model switching.
 
 ## Current state
-WP-001 is complete on `workspace-continuity-v0.1` / PR #11, layered on PR #10's `control-plane-v0.1`.
+PR #11 is the Goal Continuity Stack v0.1 proving ground, stacked on PR #10's `control-plane-v0.1` branch.
 
-The fresh-worker simulation succeeded using only compact continuity state plus explicitly named files.
+WP-001 and WP-002 are complete.
 
 ## Verified evidence
-- GitHub Actions run `36514342274` passed.
-- `scripts/bootstrap_workspace_control.py`: passed.
-- Continuity + Control Plane contract suite: **12 passed**.
-- Verified branch head: `5e5c87bcef7258ec4884cf3c161f8f09dd3e6afc`.
-- The proving ground exposed and fixed a defect in `tests/test_interruption_recovery.py`: the child process did not have a deterministic repository import path, so an import failure could be mistaken for process-interruption evidence. The child now gets repository `PYTHONPATH`, and only directories are considered run candidates.
+- GitHub Actions run `36514342274`: workspace-control validation passed; **12 tests passed**.
+- GitHub Actions run `36516118090`: workspace-control validation passed; **16 tests passed**.
+- Verified WP-002 branch head before checkpoint: `31a94aca01dea4b210b1831517d49fdd1310882e`.
+- Fresh-worker simulation succeeded using compact continuity state plus explicitly named files.
+- Validator now catches missing state file references, missing work-packet input references, and missing active packet IDs.
+- The proving ground exposed and fixed a defect in `tests/test_interruption_recovery.py`: child-process import/setup failures can no longer masquerade as process-interruption evidence.
 
 ## Completed
-- Four Codex continuity skills installed in-repo.
+- Four Codex continuity skills installed in `.codex/skills/`.
 - Durable `.workspace-control/` bootstrap installed.
 - CI continuity gate added.
 - WP-001 resume test completed.
-- Recovery test false-positive path removed.
+- WP-002 drift protection completed.
+- Negative drift tests added.
 
 ## Current task
-WP-002: harden continuity state against drift and make checkpoint updates deterministic.
+Merge-readiness review for PR #11.
 
 ## Constraints
 - Do not bypass provider/model usage limits.
@@ -32,6 +34,10 @@ WP-002: harden continuity state against drift and make checkpoint updates determ
 - Use executable evidence before marking verification complete.
 
 ## Relevant paths
+- `.codex/skills/*/SKILL.md`
+- `.workspace-control/state.json`
+- `.workspace-control/handoff.md`
+- `.workspace-control/work-packets/WP-001.yaml`
 - `.workspace-control/work-packets/WP-002.yaml`
 - `scripts/bootstrap_workspace_control.py`
 - `tests/test_workspace_continuity.py`
@@ -39,17 +45,16 @@ WP-002: harden continuity state against drift and make checkpoint updates determ
 - `tests/test_interruption_recovery.py`
 
 ## First next action
-Extend workspace validation so active work-packet input paths and state references are checked automatically, preventing stale capsules from silently passing CI.
+Review the final PR #11 diff for accidental bloat or stacked-PR integration concerns.
 
 ## Then
-1. Add deterministic checkpoint refresh/update tooling.
-2. Test stale/missing work-packet references.
-3. Keep handoff under the compactness ceiling.
-4. Decide how to propagate the interruption-test fix into PR #10's branch/integration sequence.
+1. Preserve the interruption-test correction when resolving PR #10 -> PR #11.
+2. Confirm local Codex skill discovery behavior or copy/link the four skills into the configured user-level skills directory.
+3. After PR #10 lands or is updated, retarget or merge PR #11 according to repository preference.
 
 ## Do not redo
 - Do not redesign the Control Plane.
-- Do not repeat WP-001.
+- Do not repeat WP-001 or WP-002.
 - Do not reconstruct project history from chat.
 - Do not remove the CI gate or weaken the corrected interruption test.
 
