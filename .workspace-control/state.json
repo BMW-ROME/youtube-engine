@@ -9,45 +9,53 @@
     "Work is decomposed into bounded packets with explicit verification",
     "Continuity machinery does not require bypassing provider limits"
   ],
-  "phase": "continuity-bootstrap",
+  "phase": "continuity-hardening",
   "status": "active",
   "active_workstream": "control-plane-resiliency",
-  "current_task": "Install and validate Goal Continuity Stack v0.1 on top of Control Plane v0.1",
+  "current_task": "WP-002: harden continuity state against drift and make checkpoint updates deterministic",
   "completed": [
     "Control Plane v0.1 vertical slice exists on control-plane-v0.1 / PR #10",
     "Workspace continuity architecture defined",
-    "Codex skill bundle added on workspace-continuity-v0.1"
+    "Codex skill bundle added on workspace-continuity-v0.1",
+    "WP-001 fresh-worker resume simulation completed from compact state only",
+    "Continuity-specific GitHub Actions workflow added",
+    "PR #10 interruption test corrected so child import/setup failures cannot masquerade as recovery evidence"
   ],
   "verified": [
-    "PR #10 is open and draft",
-    "PR #10 head is control-plane-v0.1",
-    "Control Plane includes state machine, RunManager, adapter, schemas, and recovery tests"
+    "Fresh-worker context was limited to state.json, handoff.md, WP-001, and WP-001 named source/test files and still identified the correct next action",
+    "scripts/bootstrap_workspace_control.py passed in GitHub Actions run 36514342274",
+    "12 continuity/control-plane recovery tests passed in GitHub Actions run 36514342274",
+    "Interruption recovery test now supplies repository PYTHONPATH to the child and only treats directories as run candidates"
   ],
   "in_progress": [
-    "Bootstrap durable workspace state",
-    "Add validation tooling and continuity tests"
+    "WP-002 state-drift protection",
+    "Deterministic checkpoint refresh tooling"
   ],
   "blocked": [],
   "next_actions": [
-    "Run continuity bootstrap/validation tests",
-    "Verify a fresh-worker resume simulation",
-    "Review whether continuity files should merge with or remain orthogonal to runtime Control Plane state"
+    "Validate work-packet input references automatically",
+    "Add deterministic checkpoint/update command to reduce manual state drift",
+    "Decide how to propagate the interruption-test fix back into PR #10 before PR #11 is rebased/merged"
   ],
   "dependencies": [
-    "PR #10 Control Plane v0.1 branch"
+    "PR #10 Control Plane v0.1 branch",
+    "PR #11 Goal Continuity Stack v0.1"
   ],
   "risks": [
-    "Project continuity state can drift from actual repository state unless validation is enforced",
+    "Project continuity state can drift from actual repository state unless validation checks both state and active work-packet references",
+    "PR #11 currently contains a test correction derived from PR #10; integration order must preserve that fix",
     "Overly broad handoff capsules can recreate the token problem they are designed to solve"
   ],
   "assumptions": [
     "Repository-local .codex/skills directories are discoverable or can be copied into the user's Codex skill path",
-    "Control Plane runtime state and workspace project state should remain separate but interoperable"
+    "Control Plane runtime state and workspace project state remain separate but interoperable"
   ],
   "decisions": [
     "Layer workspace continuity on top of control-plane-v0.1 rather than creating a competing runtime recovery system",
     "Use repository state as the durable source of truth",
-    "Do not depend on exact remaining token/message allowance"
+    "Do not depend on exact remaining token/message allowance",
+    "Use CI as objective evidence for continuity/recovery contract completion",
+    "Do not advance a work packet on static inspection alone when executable verification is available"
   ],
   "artifacts": [
     ".codex/skills/goal-control-plane/SKILL.md",
@@ -55,20 +63,25 @@
     ".codex/skills/continuity-checkpoint/SKILL.md",
     ".codex/skills/limit-resilient-executor/SKILL.md",
     ".workspace-control/state.json",
-    ".workspace-control/handoff.md"
+    ".workspace-control/handoff.md",
+    ".workspace-control/work-packets/WP-001.yaml",
+    ".workspace-control/work-packets/WP-002.yaml",
+    ".github/workflows/workspace-continuity.yml"
   ],
   "relevant_files": [
-    "control_plane/core/run_manager.py",
-    "control_plane/core/state_machine.py",
-    "tests/test_interruption_recovery.py",
-    "tests/test_recovery_contract.py"
+    ".workspace-control/work-packets/WP-002.yaml",
+    "scripts/bootstrap_workspace_control.py",
+    "tests/test_workspace_continuity.py",
+    ".github/workflows/workspace-continuity.yml",
+    "tests/test_interruption_recovery.py"
   ],
   "relevant_commits": [
-    "5ccefba0929dcabb635291738debff3fd2f245d5"
+    "5ccefba0929dcabb635291738debff3fd2f245d5",
+    "5e5c87bcef7258ec4884cf3c161f8f09dd3e6afc"
   ],
   "tests": [
-    "tests/test_workspace_continuity.py"
+    "GitHub Actions run 36514342274: workspace-control validation passed; 12 tests passed"
   ],
-  "last_known_good_state": "PR #10 head 5ccefba0929dcabb635291738debff3fd2f245d5 is mergeable and contains the Control Plane v0.1 recovery foundation.",
-  "updated_at": "2026-09-28T21:31:00-04:00"
+  "last_known_good_state": "PR #11 head 5e5c87bcef7258ec4884cf3c161f8f09dd3e6afc passed workspace-control validation and all 12 continuity/recovery contract tests in GitHub Actions run 36514342274.",
+  "updated_at": "2026-09-28T22:49:00-04:00"
 }
