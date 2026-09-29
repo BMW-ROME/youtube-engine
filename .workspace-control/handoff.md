@@ -1,58 +1,58 @@
 # Continuation Capsule
 
 ## Goal
-Make BMW-ROME/youtube-engine production-grade while ensuring project progress can survive model usage limits, context ceilings, interruptions, and worker/model switching.
+Make BMW-ROME/youtube-engine production-grade while preserving project progress across model limits, context ceilings, interruptions, and worker/model switching.
 
 ## Current state
-The continuity layer is being added on branch `workspace-continuity-v0.1`, which is based on PR #10's `control-plane-v0.1` branch.
+WP-001 is complete on `workspace-continuity-v0.1` / PR #11, layered on PR #10's `control-plane-v0.1`.
 
-PR #10 contains the first Control Plane v0.1 vertical slice: lifecycle state machine, durable RunManager, YouTube adapter, JSON schemas, and interruption/recovery tests.
-
-## Completed
-- Continuity architecture defined.
-- Four Codex skills added under `.codex/skills/`.
-- Durable `.workspace-control/` bootstrap added.
-- State schema and first work packet added.
+The fresh-worker simulation succeeded using only compact continuity state plus explicitly named files.
 
 ## Verified evidence
-- PR #10 is open and draft.
-- Base: `main`.
-- Head: `control-plane-v0.1`.
-- Head SHA at bootstrap: `5ccefba0929dcabb635291738debff3fd2f245d5`.
-- PR is currently reported mergeable.
+- GitHub Actions run `36514342274` passed.
+- `scripts/bootstrap_workspace_control.py`: passed.
+- Continuity + Control Plane contract suite: **12 passed**.
+- Verified branch head: `5e5c87bcef7258ec4884cf3c161f8f09dd3e6afc`.
+- The proving ground exposed and fixed a defect in `tests/test_interruption_recovery.py`: the child process did not have a deterministic repository import path, so an import failure could be mistaken for process-interruption evidence. The child now gets repository `PYTHONPATH`, and only directories are considered run candidates.
+
+## Completed
+- Four Codex continuity skills installed in-repo.
+- Durable `.workspace-control/` bootstrap installed.
+- CI continuity gate added.
+- WP-001 resume test completed.
+- Recovery test false-positive path removed.
 
 ## Current task
-Validate that a fresh worker can resume the Control Plane resiliency work using only compact continuity state plus explicitly referenced files.
+WP-002: harden continuity state against drift and make checkpoint updates deterministic.
 
 ## Constraints
 - Do not bypass provider/model usage limits.
-- Do not reload unrelated repository/chat history.
+- Do not reload unrelated chat/repository history.
 - Keep runtime Control Plane state separate from project continuity state.
-- Preserve settled decisions unless new evidence requires revision.
+- Use executable evidence before marking verification complete.
 
 ## Relevant paths
-- `.workspace-control/state.json`
-- `.workspace-control/work-packets/WP-001.yaml`
-- `control_plane/core/run_manager.py`
-- `control_plane/core/state_machine.py`
-- `tests/test_interruption_recovery.py`
-- `tests/test_recovery_contract.py`
+- `.workspace-control/work-packets/WP-002.yaml`
+- `scripts/bootstrap_workspace_control.py`
 - `tests/test_workspace_continuity.py`
+- `.github/workflows/workspace-continuity.yml`
+- `tests/test_interruption_recovery.py`
 
 ## First next action
-Run `pytest -q tests/test_workspace_continuity.py`.
+Extend workspace validation so active work-packet input paths and state references are checked automatically, preventing stale capsules from silently passing CI.
 
 ## Then
-1. Run existing Control Plane recovery tests.
-2. Perform fresh-worker resume simulation.
-3. Record evidence in state/handoff.
-4. Decide whether to add CI validation.
+1. Add deterministic checkpoint refresh/update tooling.
+2. Test stale/missing work-packet references.
+3. Keep handoff under the compactness ceiling.
+4. Decide how to propagate the interruption-test fix into PR #10's branch/integration sequence.
 
 ## Do not redo
-- Do not redesign the entire Control Plane.
-- Do not reconstruct the project from full conversation history.
-- Do not create a second competing runtime recovery state machine.
+- Do not redesign the Control Plane.
+- Do not repeat WP-001.
+- Do not reconstruct project history from chat.
+- Do not remove the CI gate or weaken the corrected interruption test.
 
 ## Unknowns
-- Whether the local Codex installation auto-discovers repository-local `.codex/skills` without copy/link configuration.
-- Whether continuity validation belongs in existing CI or a dedicated workflow.
+- Whether local Codex automatically discovers repository-local `.codex/skills`.
+- Whether the PR #10 test correction should be cherry-picked into `control-plane-v0.1` before PR #11 integration or carried through stacked-PR merge order.
