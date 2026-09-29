@@ -137,10 +137,13 @@ def test_validator_rejects_missing_state_reference(tmp_path):
 def test_validator_rejects_missing_work_packet_input(tmp_path):
     sandbox = copy_workspace_control_tree(tmp_path)
     packet = sandbox / ".workspace-control" / "work-packets" / "WP-002.yaml"
-    packet.write_text(
-        packet.read_text(encoding="utf-8") + "  - missing/work_packet_input.py\n",
-        encoding="utf-8",
+    text = packet.read_text(encoding="utf-8")
+    text = text.replace(
+        "inputs:\n",
+        "inputs:\n  - missing/work_packet_input.py\n",
+        1,
     )
+    packet.write_text(text, encoding="utf-8")
 
     errors = validate(sandbox)
     assert any("WP-002.yaml references missing file: missing/work_packet_input.py" in e for e in errors)
