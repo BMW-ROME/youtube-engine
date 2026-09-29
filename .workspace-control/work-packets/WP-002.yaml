@@ -1,7 +1,7 @@
 id: WP-002
 goal: Prevent workspace continuity state from silently drifting away from the repository
 workstream: control-plane-resiliency
-status: ready
+status: complete
 
 inputs:
   - .workspace-control/state.json
@@ -29,8 +29,14 @@ constraints:
   - preserve model/provider-limit compliance
 
 verification:
-  - python scripts/bootstrap_workspace_control.py
-  - python -m pytest -q tests/test_workspace_continuity.py
-  - GitHub Actions workspace continuity workflow
+  - GitHub Actions run 36516118090
+  - workspace-control validation passed
+  - 16 continuity/control-plane tests passed
+  - negative tests reject missing state references, missing work-packet inputs, and missing active packet IDs
 
-next_on_success: WP-003
+result:
+  branch_head: 31a94aca01dea4b210b1831517d49fdd1310882e
+  gate_run: 36516118090
+  next: merge-readiness
+
+next_on_success: none
