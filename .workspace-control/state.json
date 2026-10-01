@@ -9,10 +9,10 @@
     "Work is decomposed into bounded packets with explicit verification",
     "Continuity machinery does not require bypassing provider limits"
   ],
-  "phase": "integration-review",
+  "phase": "integration-ready",
   "status": "active",
   "active_workstream": "control-plane-resiliency",
-  "current_task": "Publish authorized repair branch and verify its own GitHub CI",
+  "current_task": "Integrate verified PR #10/#11/#12 stack while preserving recovery fixes",
   "completed": [
     "Control Plane v0.1 vertical slice exists on control-plane-v0.1 / PR #10",
     "Workspace continuity architecture defined",
@@ -23,7 +23,8 @@
     "WP-002 drift protection implemented",
     "Dependency-free validator now checks required state keys, state path references, active work-packet existence, work-packet input paths, duplicate IDs, and missing next_on_success targets for complete packets",
     "Negative tests added for missing state references, missing work-packet inputs, and missing active packet IDs",
-    "WP-003: reviewed stacked PRs, reproduced 17 failures, repaired recovery integrity and continuity contract drift"
+    "WP-003: reviewed stacked PRs, reproduced 17 failures, repaired recovery integrity and continuity contract drift",
+    "Authorized repair branch published; PR #12 opened against workspace-continuity-v0.1"
   ],
   "verified": [
     "Fresh-worker context was limited to state.json, handoff.md, WP-001, and WP-001 named source/test files and still identified the correct next action",
@@ -35,21 +36,19 @@
     "Validator rejects missing state references, missing work-packet inputs, and missing active packet IDs",
     "46 tests passed locally including mocked YouTube adapter on 2026-10-01",
     "Workspace validator and git diff check passed after recovery repairs",
-    "Reviewed branch ancestry is main -> control-plane-v0.1 -> workspace-continuity-v0.1"
+    "Reviewed branch ancestry is main -> control-plane-v0.1 -> workspace-continuity-v0.1",
+    "GitHub Actions run 36858002956 passed workspace validation and all 46 tests for PR #12 code head 24431bb23b33cd9ab8ae5f65ac50a46adb6d7028"
   ],
-  "in_progress": [
-    "Publication and verification authorized by user on 2026-10-01"
-  ],
+  "in_progress": [],
   "blocked": [],
   "next_actions": [
-    "Publish repair branch through connected GitHub integration",
-    "Open repair PR targeting workspace-continuity-v0.1 and verify new CI",
-    "Carry fixes into PR #10/#11 integration stack",
-    "Recover voice-project Chapter 2.1-2.3 interfaces before Chapter 2.4 implementation"
+    "Integrate PR #12 repairs into PR #11 and PR #10 stack before deployment",
+    "Recover voice-project Chapter 2.1-2.3 interfaces and panel identities, then implement Chapter 2.4 Distillation Engine"
   ],
   "dependencies": [
     "PR #10 Control Plane v0.1 branch",
-    "PR #11 Goal Continuity Stack v0.1"
+    "PR #11 Goal Continuity Stack v0.1",
+    "PR #12 recovery integrity repairs"
   ],
   "risks": [
     "PR #11 currently contains a test correction derived from PR #10; integration order must preserve that fix",
@@ -98,13 +97,15 @@
   "relevant_commits": [
     "5ccefba0929dcabb635291738debff3fd2f245d5",
     "31a94aca01dea4b210b1831517d49fdd1310882e",
-    "6dfb5d9"
+    "6dfb5d9",
+    "24431bb23b33cd9ab8ae5f65ac50a46adb6d7028"
   ],
   "tests": [
     "GitHub Actions run 36514342274: workspace-control validation passed; 12 tests passed",
     "GitHub Actions run 36516118090: workspace-control validation passed; 16 tests passed",
-    "2026-10-01 local review gate: 46 tests passed, dependency-free validator passed, git diff check passed"
+    "2026-10-01 local review gate: 46 tests passed, dependency-free validator passed, git diff check passed",
+    "GitHub Actions 36858002956: workspace validator passed; 46 tests passed"
   ],
-  "last_known_good_state": "Local repair commit 6dfb5d9 passed 46 tests and workspace validation. User explicitly authorized publication on 2026-10-01; new remote CI is pending.",
-  "updated_at": "2026-10-01T11:50:36.005896+00:00"
+  "last_known_good_state": "PR #12 code head 24431bb23b33cd9ab8ae5f65ac50a46adb6d7028 passed workspace validation and 46 tests in GitHub Actions 36858002956. Publication is complete; all three stacked PRs remain unmerged.",
+  "updated_at": "2026-10-01T11:53:04.254572+00:00"
 }

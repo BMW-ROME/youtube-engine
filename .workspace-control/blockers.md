@@ -1,3 +1,3 @@
 # Blockers
 
-None. User explicitly authorized publication on 2026-10-01. New repair-branch CI is pending.
+None for publication: user authorization received, PR #12 open, and its code CI passed. Production stage-resume and upload idempotency are separate unfinished implementation tasks.

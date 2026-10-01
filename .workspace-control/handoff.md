@@ -4,7 +4,7 @@
 Build a dependable YouTube engine and preserve the human's goal across interruptions, context ceilings, and worker handoffs.
 
 ## Current state
-WP-001, WP-002, and WP-003 are complete. PR #10 is draft/unmerged; PR #11 is open/unmerged. Review repairs are on review/recovery-contract-hardening, based on PR #11 head 10ad98b596d13634ff48b02035e5c106f63ca4b6.
+WP-001, WP-002, and WP-003 are complete. PR #10 is draft/unmerged; PR #11 is open/unmerged. PR #12 is open and mergeable on review/recovery-contract-hardening, based on PR #11 head 10ad98b596d13634ff48b02035e5c106f63ca4b6. None of the three PRs is merged.
 
 ## Verified evidence
 - PR #11 reviewed head: GitHub Actions 36516217562 succeeded.
@@ -18,7 +18,7 @@ WP-001, WP-002, and WP-003 are complete. PR #10 is draft/unmerged; PR #11 is ope
 Recovery now checks contained file paths, checkpoint identity and stage successor, artifact hashes, and the status pointer. Failed recovery remains retryable after evidence repair. Final upload checkpoints permit a null successor. Successful results record checkpointed stages. JSON writes are atomic; completed checkpoints cannot be overwritten or rewound. Continuity validation checks basic state types/statuses, duplicate YAML keys, and escaping symlinks. CI runs all tests under tests/.
 
 ## Current task
-Publish the repair branch and verify its own CI before integration review.
+Integrate the verified repair stack before deployment.
 
 ## Constraints and boundaries
 - Preserve PR #11's interruption-test correction.
@@ -40,7 +40,7 @@ Publish the repair branch and verify its own CI before integration review.
 - .github/workflows/workspace-continuity.yml
 
 ## First next action
-Publish and verify the recovery repair PR targeting workspace-continuity-v0.1.
+Integrate PR #12 repairs into the PR #11/#10 stack while preserving the interruption correction.
 
 ## Then
 Carry repair changes into the PR #10/#11 integration stack. Recover the actual voice-project Chapter 2.1-2.3 contracts and panel identities before implementing Chapter 2.4 Distillation Engine. Recovered V1 task-sheet checkmarks are not executable interfaces.
@@ -51,5 +51,5 @@ Do not repeat WP-001/WP-002, recreate panel identities, retranscribe inaccessibl
 ## Unknowns
 Local Windows Codex skill discovery; unrecovered voice-contract artifact locations; production stage-resume integration and upload idempotency.
 
-## Publication authorization
-The user explicitly authorized publishing the reviewed repair branch and opening its PR on 2026-10-01. No authorization blocker remains. Publish through the connected GitHub integration, then verify new CI.
+## Publication and remote verification
+User authorized publication on 2026-10-01. PR #12: https://github.com/BMW-ROME/youtube-engine/pull/12. Code head 24431bb23b33cd9ab8ae5f65ac50a46adb6d7028 passed workspace validation and 46 tests in GitHub Actions run 36858002956. No merge or deployment occurred.
