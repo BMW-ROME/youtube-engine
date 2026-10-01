@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import pytest
 from pathlib import Path
 
 from scripts.bootstrap_workspace_control import validate
@@ -158,3 +159,32 @@ def test_validator_rejects_missing_active_work_packet(tmp_path):
 
     errors = validate(sandbox)
     assert any("state current_task references missing active work packet: WP-999" in e for e in errors)
+
+
+@pytest.mark.parametrize("value", [[], "state", None])
+def test_validator_reports_non_object_state(tmp_path, value):
+    sandbox = copy_workspace_control_tree(tmp_path)
+    (sandbox / ".workspace-control/state.json").write_text(json.dumps(value))
+    assert "state.json must be an object" in validate(sandbox)
+
+
+@pytest.mark.parametrize("field,value", [("status", "invented"), ("completed", "all done"), ("next_actions", [123]), ("project", "")])
+def test_validator_rejects_state_contract_drift(tmp_path, field, value):
+    sandbox = copy_workspace_control_tree(tmp_path)
+    path = sandbox / ".workspace-control/state.json"
+    state = json.loads(path.read_text())
+    state[field] = value
+    path.write_text(json.dumps(state))
+    assert any(f"state.json {field}" in error for error in validate(sandbox))
+
+
+def test_validator_rejects_symlink_escape(tmp_path):
+    sandbox = copy_workspace_control_tree(tmp_path)
+    outside = tmp_path / "outside.py"
+    outside.write_text("outside")
+    (sandbox / "escaped.py").symlink_to(outside)
+    path = sandbox / ".workspace-control/state.json"
+    state = json.loads(path.read_text())
+    state["relevant_files"].append("escaped.py")
+    path.write_text(json.dumps(state))
+    assert any("unsafe path reference: escaped.py" in e for e in validate(sandbox))

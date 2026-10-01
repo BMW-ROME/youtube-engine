@@ -1,63 +1,55 @@
 # Continuation Capsule
 
 ## Goal
-Make BMW-ROME/youtube-engine production-grade while preserving project progress across model limits, context ceilings, interruptions, and worker/model switching.
+Build a dependable YouTube engine and preserve the human's goal across interruptions, context ceilings, and worker handoffs.
 
 ## Current state
-PR #11 is the Goal Continuity Stack v0.1 proving ground, stacked on PR #10's `control-plane-v0.1` branch.
-
-WP-001 and WP-002 are complete.
+WP-001, WP-002, and WP-003 are complete. PR #10 is draft/unmerged; PR #11 is open/unmerged. Review repairs are on review/recovery-contract-hardening, based on PR #11 head 10ad98b596d13634ff48b02035e5c106f63ca4b6.
 
 ## Verified evidence
-- GitHub Actions run `36514342274`: workspace-control validation passed; **12 tests passed**.
-- GitHub Actions run `36516118090`: workspace-control validation passed; **16 tests passed**.
-- Verified WP-002 branch head before checkpoint: `31a94aca01dea4b210b1831517d49fdd1310882e`.
-- Fresh-worker simulation succeeded using compact continuity state plus explicitly named files.
-- Validator now catches missing state file references, missing work-packet input references, and missing active packet IDs.
-- The proving ground exposed and fixed a defect in `tests/test_interruption_recovery.py`: child-process import/setup failures can no longer masquerade as process-interruption evidence.
+- PR #11 reviewed head: GitHub Actions 36516217562 succeeded.
+- Original continuity/recovery gate: 16 tests passed locally.
+- Seventeen new regressions failed against the original RunManager.
+- After repairs: 46 tests passed locally, including mocked YouTube adapter.
+- Dependency-free validator and git diff check passed.
+- Reviewed branch ancestry is main -> control-plane-v0.1 -> workspace-continuity-v0.1.
 
 ## Completed
-- Four Codex continuity skills installed in `.codex/skills/`.
-- Durable `.workspace-control/` bootstrap installed.
-- CI continuity gate added.
-- WP-001 resume test completed.
-- WP-002 drift protection completed.
-- Negative drift tests added.
+Recovery now checks contained file paths, checkpoint identity and stage successor, artifact hashes, and the status pointer. Failed recovery remains retryable after evidence repair. Final upload checkpoints permit a null successor. Successful results record checkpointed stages. JSON writes are atomic; completed checkpoints cannot be overwritten or rewound. Continuity validation checks basic state types/statuses, duplicate YAML keys, and escaping symlinks. CI runs all tests under tests/.
 
 ## Current task
-Merge-readiness review for PR #11.
+Publish the repair branch and verify its own CI before integration review.
 
-## Constraints
-- Do not bypass provider/model usage limits.
-- Do not reload unrelated chat/repository history.
-- Keep runtime Control Plane state separate from project continuity state.
-- Use executable evidence before marking verification complete.
+## Constraints and boundaries
+- Preserve PR #11's interruption-test correction.
+- Legacy checkpoints missing artifact hashes require explicit reverification.
+- One writer per run; no multi-process locking or power-loss transaction guarantee.
+- recover() returns a next-stage hint. The production adapter still runs the full pipeline; stage-level production resume is not implemented.
+- Do not bypass provider limits or reload unrelated history.
+- Do not deploy the original intermediate recovery implementation.
 
 ## Relevant paths
-- `.codex/skills/*/SKILL.md`
-- `.workspace-control/state.json`
-- `.workspace-control/handoff.md`
-- `.workspace-control/work-packets/WP-001.yaml`
-- `.workspace-control/work-packets/WP-002.yaml`
-- `scripts/bootstrap_workspace_control.py`
-- `tests/test_workspace_continuity.py`
-- `.github/workflows/workspace-continuity.yml`
-- `tests/test_interruption_recovery.py`
+- .workspace-control/work-packets/WP-003.yaml
+- docs/reviews/2026-10-01-recovery-readiness.md
+- control_plane/core/run_manager.py
+- control_plane/schemas/checkpoint.schema.json
+- scripts/bootstrap_workspace_control.py
+- tests/test_run_manager_integrity.py
+- tests/test_workspace_continuity.py
+- tests/test_interruption_recovery.py
+- .github/workflows/workspace-continuity.yml
 
 ## First next action
-Review the final PR #11 diff for accidental bloat or stacked-PR integration concerns.
+Publish and verify the recovery repair PR targeting workspace-continuity-v0.1.
 
 ## Then
-1. Preserve the interruption-test correction when resolving PR #10 -> PR #11.
-2. Confirm local Codex skill discovery behavior or copy/link the four skills into the configured user-level skills directory.
-3. After PR #10 lands or is updated, retarget or merge PR #11 according to repository preference.
+Carry repair changes into the PR #10/#11 integration stack. Recover the actual voice-project Chapter 2.1-2.3 contracts and panel identities before implementing Chapter 2.4 Distillation Engine. Recovered V1 task-sheet checkmarks are not executable interfaces.
 
 ## Do not redo
-- Do not redesign the Control Plane.
-- Do not repeat WP-001 or WP-002.
-- Do not reconstruct project history from chat.
-- Do not remove the CI gate or weaken the corrected interruption test.
+Do not repeat WP-001/WP-002, recreate panel identities, retranscribe inaccessible recordings, or call a mocked adapter test real production evidence.
 
 ## Unknowns
-- Whether local Codex automatically discovers repository-local `.codex/skills`.
-- Whether the PR #10 test correction should be cherry-picked into `control-plane-v0.1` before PR #11 integration or carried through stacked-PR merge order.
+Local Windows Codex skill discovery; unrecovered voice-contract artifact locations; production stage-resume integration and upload idempotency.
+
+## Publication authorization
+The user explicitly authorized publishing the reviewed repair branch and opening its PR on 2026-10-01. No authorization blocker remains. Publish through the connected GitHub integration, then verify new CI.

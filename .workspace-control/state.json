@@ -9,10 +9,10 @@
     "Work is decomposed into bounded packets with explicit verification",
     "Continuity machinery does not require bypassing provider limits"
   ],
-  "phase": "merge-readiness",
+  "phase": "integration-review",
   "status": "active",
   "active_workstream": "control-plane-resiliency",
-  "current_task": "Prepare PR #11 for merge review after WP-001 and WP-002 completion",
+  "current_task": "Publish authorized repair branch and verify its own GitHub CI",
   "completed": [
     "Control Plane v0.1 vertical slice exists on control-plane-v0.1 / PR #10",
     "Workspace continuity architecture defined",
@@ -22,7 +22,8 @@
     "PR #10 interruption test corrected so child import/setup failures cannot masquerade as recovery evidence",
     "WP-002 drift protection implemented",
     "Dependency-free validator now checks required state keys, state path references, active work-packet existence, work-packet input paths, duplicate IDs, and missing next_on_success targets for complete packets",
-    "Negative tests added for missing state references, missing work-packet inputs, and missing active packet IDs"
+    "Negative tests added for missing state references, missing work-packet inputs, and missing active packet IDs",
+    "WP-003: reviewed stacked PRs, reproduced 17 failures, repaired recovery integrity and continuity contract drift"
   ],
   "verified": [
     "Fresh-worker context was limited to state.json, handoff.md, WP-001, and WP-001 named source/test files and still identified the correct next action",
@@ -31,16 +32,20 @@
     "Interruption recovery test now supplies repository PYTHONPATH to the child and only treats directories as run candidates",
     "scripts/bootstrap_workspace_control.py passed in GitHub Actions run 36516118090",
     "16 continuity/control-plane tests passed in GitHub Actions run 36516118090",
-    "Validator rejects missing state references, missing work-packet inputs, and missing active packet IDs"
+    "Validator rejects missing state references, missing work-packet inputs, and missing active packet IDs",
+    "46 tests passed locally including mocked YouTube adapter on 2026-10-01",
+    "Workspace validator and git diff check passed after recovery repairs",
+    "Reviewed branch ancestry is main -> control-plane-v0.1 -> workspace-continuity-v0.1"
   ],
   "in_progress": [
-    "PR #11 merge-readiness review"
+    "Publication and verification authorized by user on 2026-10-01"
   ],
   "blocked": [],
   "next_actions": [
-    "Review final PR #11 diff for accidental bloat or stacked-PR integration concerns",
-    "Preserve the interruption-test correction when resolving the PR #10 -> PR #11 stacked merge sequence",
-    "After PR #10 lands or is updated, retarget or merge PR #11 according to repository preference"
+    "Publish repair branch through connected GitHub integration",
+    "Open repair PR targeting workspace-continuity-v0.1 and verify new CI",
+    "Carry fixes into PR #10/#11 integration stack",
+    "Recover voice-project Chapter 2.1-2.3 interfaces before Chapter 2.4 implementation"
   ],
   "dependencies": [
     "PR #10 Control Plane v0.1 branch",
@@ -48,7 +53,9 @@
   ],
   "risks": [
     "PR #11 currently contains a test correction derived from PR #10; integration order must preserve that fix",
-    "Repository-local .codex/skills discovery may require local Codex configuration or copying skills into the user-level skill directory"
+    "Repository-local .codex/skills discovery may require local Codex configuration or copying skills into the user-level skill directory",
+    "Legacy checkpoints without artifact hashes require explicit reverification",
+    "RunManager has one writer per run; production adapter does not implement stage-level resume"
   ],
   "assumptions": [
     "Repository-local .codex/skills directories are discoverable or can be copied into the user's Codex skill path",
@@ -73,24 +80,31 @@
     ".workspace-control/work-packets/WP-002.yaml",
     ".github/workflows/workspace-continuity.yml",
     "scripts/bootstrap_workspace_control.py",
-    "tests/test_workspace_continuity.py"
+    "tests/test_workspace_continuity.py",
+    ".workspace-control/work-packets/WP-003.yaml",
+    "tests/test_run_manager_integrity.py",
+    "docs/reviews/2026-10-01-recovery-readiness.md"
   ],
   "relevant_files": [
+    "control_plane/core/run_manager.py",
+    "control_plane/schemas/checkpoint.schema.json",
     "scripts/bootstrap_workspace_control.py",
+    "tests/test_run_manager_integrity.py",
     "tests/test_workspace_continuity.py",
+    "tests/test_interruption_recovery.py",
     ".github/workflows/workspace-continuity.yml",
-    ".workspace-control/work-packets/WP-001.yaml",
-    ".workspace-control/work-packets/WP-002.yaml",
-    "tests/test_interruption_recovery.py"
+    "docs/reviews/2026-10-01-recovery-readiness.md"
   ],
   "relevant_commits": [
     "5ccefba0929dcabb635291738debff3fd2f245d5",
-    "31a94aca01dea4b210b1831517d49fdd1310882e"
+    "31a94aca01dea4b210b1831517d49fdd1310882e",
+    "6dfb5d9"
   ],
   "tests": [
     "GitHub Actions run 36514342274: workspace-control validation passed; 12 tests passed",
-    "GitHub Actions run 36516118090: workspace-control validation passed; 16 tests passed"
+    "GitHub Actions run 36516118090: workspace-control validation passed; 16 tests passed",
+    "2026-10-01 local review gate: 46 tests passed, dependency-free validator passed, git diff check passed"
   ],
-  "last_known_good_state": "PR #11 head 31a94aca01dea4b210b1831517d49fdd1310882e passed workspace-control validation and all 16 continuity/recovery contract tests in GitHub Actions run 36516118090.",
-  "updated_at": "2026-09-28T23:14:00-04:00"
+  "last_known_good_state": "Local repair commit 6dfb5d9 passed 46 tests and workspace validation. User explicitly authorized publication on 2026-10-01; new remote CI is pending.",
+  "updated_at": "2026-10-01T11:50:36.005896+00:00"
 }
