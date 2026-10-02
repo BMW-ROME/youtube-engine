@@ -1,25 +1,16 @@
 # Next
 
 ## Active phase
-
-Merge-readiness review for PR #11.
-
-## Completed packets
-
-- `.workspace-control/work-packets/WP-001.yaml`
-- `.workspace-control/work-packets/WP-002.yaml`
+Integration-ready after WP-003 repair verification.
 
 ## Immediate
+Integrate PR #12 repairs into the PR #11/#10 stack while preserving the corrected interruption test. All three PRs remain unmerged; publication authorization did not authorize deployment.
 
-1. Review final PR #11 diff for accidental bloat or stacked-PR integration concerns.
-2. Preserve the `tests/test_interruption_recovery.py` correction when resolving PR #10 -> PR #11.
-3. Confirm local Codex skill discovery behavior or copy/link the four skills into the configured user-level skills directory.
+## Voice-project successor
+Recover actual Chapter 2.1-2.3 contracts and eight panel identities, then implement Chapter 2.4 Distillation Engine. Preserve original assets and traceable evidence labels.
 
 ## Verified gates
+PR #12 code head 24431bb23b33cd9ab8ae5f65ac50a46adb6d7028: GitHub Actions run 36858002956 passed workspace validation and 46 tests. Local gate also passed 46 tests.
 
-- GitHub Actions run `36514342274`: validation passed; 12 tests passed.
-- GitHub Actions run `36516118090`: validation passed; 16 tests passed.
-
-## Integration follow-up
-
-The proving ground corrected `tests/test_interruption_recovery.py`, originally introduced by PR #10. Preserve that correction when resolving the stacked PR sequence.
+## Boundaries
+Legacy checkpoints require artifact-integrity reverification. RunManager is single-writer. The adapter does not yet execute stage-level resume.

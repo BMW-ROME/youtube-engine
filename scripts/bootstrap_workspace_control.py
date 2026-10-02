@@ -150,6 +150,8 @@ def parse_simple_yaml(path: Path) -> dict[str, object]:
             value = value.strip()
             if not key:
                 raise ValidationError(f"{path}: empty key at line {line_no}")
+            if key in data:
+                raise ValidationError(f"{path}: duplicate key {key!r} at line {line_no}")
             current_key = key
             data[key] = parse_scalar(value) if value else []
             continue
@@ -167,10 +169,13 @@ def validate_existing_repo_paths(root: Path, values: list[str], source: str) -> 
             continue
         if not is_probable_repo_path(rel):
             continue
-        if Path(rel).is_absolute() or ".." in Path(rel).parts:
+        if Path(rel).is_absolute() or ".." in Path(rel).parts or "\\" in rel:
             errors.append(f"{source} contains unsafe path reference: {rel}")
             continue
-        if not (root / rel).exists():
+        resolved = (root / rel).resolve()
+        if not resolved.is_relative_to(root.resolve()):
+            errors.append(f"{source} contains unsafe path reference: {rel}")
+        elif not resolved.exists():
             errors.append(f"{source} references missing file: {rel}")
     return errors
 
@@ -209,14 +214,14 @@ def validate_work_packets(root: Path, wc: Path, state: dict[str, object]) -> lis
             errors.append(f"{rel_packet} id must be a string")
 
         status = packet.get("status")
-        if status not in VALID_WORK_PACKET_STATUSES:
+        if not isinstance(status, str) or status not in VALID_WORK_PACKET_STATUSES:
             errors.append(f"{rel_packet} invalid status: {status!r}")
 
         inputs = packet.get("inputs")
         if not isinstance(inputs, list) or not inputs:
             errors.append(f"{rel_packet} inputs must be a non-empty list")
         else:
-            errors.extend(validate_existing_repo_paths(root, [str(x) for x in inputs], rel_packet))
+            errors.extend(validate_existing_repo_paths(root, inputs, rel_packet))
 
         next_packet = packet.get("next_on_success")
         if isinstance(next_packet, str) and next_packet.startswith("WP-"):
@@ -251,6 +256,27 @@ def validate(root: Path) -> list[str]:
     except json.JSONDecodeError as exc:
         errors.append(f"invalid state.json: {exc}")
         return errors
+
+    if not isinstance(state, dict):
+        return errors + ["state.json must be an object"]
+
+    schema = json.loads((wc / "state.schema.json").read_text(encoding="utf-8")) if (wc / "state.schema.json").exists() else {}
+    for key, spec in schema.get("properties", {}).items():
+        if key not in state:
+            continue
+        value = state[key]
+        expected = spec.get("type")
+        if expected == "string" and not isinstance(value, str):
+            errors.append(f"state.json {key} must be a string")
+        if expected == "array" and (not isinstance(value, list) or not all(isinstance(x, str) for x in value)):
+            errors.append(f"state.json {key} must be a list of strings")
+        if "enum" in spec and value not in spec["enum"]:
+            errors.append(f"state.json {key} has invalid value: {value!r}")
+        if isinstance(value, str) and len(value) < spec.get("minLength", 0):
+            errors.append(f"state.json {key} must not be empty")
+    if schema.get("additionalProperties") is False:
+        for key in set(state) - set(schema.get("properties", {})):
+            errors.append(f"state.json unknown key: {key}")
 
     for key in REQUIRED_STATE_KEYS:
         if key not in state:
