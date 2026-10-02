@@ -1,0 +1,32 @@
+id: WP-003
+goal: Review and repair the Control Plane and Continuity integration contract
+workstream: control-plane-resiliency
+status: complete
+inputs:
+  - .workspace-control/state.json
+  - control_plane/core/run_manager.py
+  - control_plane/schemas/checkpoint.schema.json
+  - scripts/bootstrap_workspace_control.py
+  - tests/test_run_manager_integrity.py
+  - tests/test_workspace_continuity.py
+  - tests/test_interruption_recovery.py
+  - .github/workflows/workspace-continuity.yml
+  - docs/reviews/2026-10-01-recovery-readiness.md
+dependencies:
+  - WP-002
+definition_of_done:
+  - Original defects reproduced with executable evidence
+  - Recovery integrity and retry behavior corrected
+  - Original child-process interruption correction preserved
+  - Local contracts and dependency-free validator pass
+  - Review verdict and integration boundaries recorded
+constraints:
+  - Preserve original master assets and completed work
+  - Do not conflate a validated next-stage hint with actual pipeline resume
+  - Do not merge or deploy unreviewed intermediate recovery code
+verification:
+  - 17 regression failures reproduced against original stack
+  - 46 tests passed locally with mocked adapter
+  - workspace-control validation passed
+  - git diff check passed
+next_on_success: none

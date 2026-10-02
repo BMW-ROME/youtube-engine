@@ -1,0 +1,42 @@
+id: WP-002
+goal: Prevent workspace continuity state from silently drifting away from the repository
+workstream: control-plane-resiliency
+status: complete
+
+inputs:
+  - .workspace-control/state.json
+  - .workspace-control/handoff.md
+  - .workspace-control/work-packets/WP-002.yaml
+  - scripts/bootstrap_workspace_control.py
+  - tests/test_workspace_continuity.py
+  - .github/workflows/workspace-continuity.yml
+
+dependencies:
+  - WP-001
+  - GitHub-Actions-36514342274
+
+definition_of_done:
+  - validator checks active work-packet input paths
+  - validator checks relevant state file references
+  - stale or missing references fail deterministically
+  - checkpoint refresh avoids unnecessary hand-edited timestamps/state drift
+  - CI continuity/recovery gate remains green
+
+constraints:
+  - keep validation dependency-light
+  - do not merge runtime Control Plane state with workspace continuity state
+  - do not expand the handoff capsule into full project history
+  - preserve model/provider-limit compliance
+
+verification:
+  - GitHub Actions run 36516118090
+  - workspace-control validation passed
+  - 16 continuity/control-plane tests passed
+  - negative tests reject missing state references, missing work-packet inputs, and missing active packet IDs
+
+result:
+  branch_head: 31a94aca01dea4b210b1831517d49fdd1310882e
+  gate_run: 36516118090
+  next: merge-readiness
+
+next_on_success: none

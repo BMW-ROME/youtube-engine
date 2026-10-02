@@ -1,0 +1,36 @@
+id: WP-001
+goal: Prove workspace continuity can resume Control Plane resiliency work without full chat reconstruction
+workstream: control-plane-resiliency
+status: complete
+
+inputs:
+  - .workspace-control/state.json
+  - .workspace-control/handoff.md
+  - control_plane/core/run_manager.py
+  - control_plane/core/state_machine.py
+  - tests/test_interruption_recovery.py
+  - tests/test_recovery_contract.py
+
+dependencies:
+  - PR-10
+  - control-plane-v0.1@5ccefba0929dcabb635291738debff3fd2f245d5
+
+definition_of_done:
+  - workspace state file satisfies required continuity schema fields
+  - all work-packet input paths exist
+  - continuity bootstrap test passes
+  - existing recovery tests remain green
+  - fresh worker can state the exact next action from compact state alone
+
+verification:
+  - fresh-worker simulation completed without full chat reconstruction
+  - GitHub Actions run 36514342274
+  - workspace-control validation passed
+  - 12 continuity/control-plane tests passed
+  - interruption recovery test false-positive path discovered and corrected
+
+result:
+  branch_head: 5e5c87bcef7258ec4884cf3c161f8f09dd3e6afc
+  next: WP-002
+
+next_on_success: WP-002
