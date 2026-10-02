@@ -1,0 +1,33 @@
+id: WP-004
+goal: Integrate the recovery stack and resume the recovered voice-engine contracts
+workstream: voice-engine-recovery
+status: complete
+inputs:
+  - voice_engine/evidence.py
+  - voice_engine/panel.py
+  - voice_engine/panel_definition.json
+  - voice_engine/distillation.py
+  - voice_engine/master_asset_template.json
+  - tests/test_voice_engine.py
+  - voice_engine/README.md
+dependencies:
+  - WP-003
+definition_of_done:
+  - PR 12 folded into PR 11 and PR 11 into PR 10 before main integration
+  - Integrated main retains reviewed recovery code and passes 46 tests
+  - Recover original Chapter 2.1-2.4 artifacts without changing source archives
+  - Preserve all eight panel IDs and skepticism and humor rules
+  - Repair omitted panel module and distillation provenance guards
+  - Synthetic contract-chain and regression tests pass
+constraints:
+  - No private recordings or transcripts enter GitHub
+  - Synthetic tests are not real audience or market validation
+  - Do not mark real-source end-to-end test complete
+verification:
+  - PR 12 merged as f8cd72219a447c4c19efc6899522c526f90e13d3
+  - PR 11 merged as e39818f1d359335a162ba105974a4c1d0e633d52
+  - PR 10 merged to main as 3e6fdc7430e776d6506256d2fd3dd946ea624d35
+  - Integration GitHub Actions 37019497592 and 37019624288 passed
+  - Integrated main passed 46 tests locally
+  - Voice-recovery repository suite passed 61 tests locally
+next_on_success: WP-005

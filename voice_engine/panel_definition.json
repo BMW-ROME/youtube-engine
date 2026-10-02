@@ -1,0 +1,178 @@
+{
+  "engine": "walk_with_me_engine",
+  "version": "1.0",
+  "panelists": [
+    {
+      "id": "WMW-01",
+      "name": "The Curious One",
+      "role": "novelty_and_curiosity",
+      "description": "Wants to know where the thought goes and whether it reveals a genuinely interesting perspective.",
+      "pressure_points": [
+        "novelty",
+        "intrigue",
+        "memorable ideas",
+        "unfinished curiosity"
+      ],
+      "failure_modes": [
+        "boredom",
+        "predictability",
+        "too much setup"
+      ]
+    },
+    {
+      "id": "WMW-02",
+      "name": "The Skeptic",
+      "role": "claim_stress_test",
+      "description": "Challenges unsupported claims, exaggeration, posturing, and convenient reasoning.",
+      "pressure_points": [
+        "evidence",
+        "logic",
+        "assumptions",
+        "self_indulgence"
+      ],
+      "failure_modes": [
+        "hype",
+        "hand-waving",
+        "contradictions"
+      ]
+    },
+    {
+      "id": "WMW-03",
+      "name": "The Busy Person",
+      "role": "attention_and_efficiency",
+      "description": "Has limited attention and asks whether the material earns the time it consumes.",
+      "pressure_points": [
+        "clarity",
+        "pacing",
+        "relevance",
+        "retention"
+      ],
+      "failure_modes": [
+        "rambling",
+        "slow payoff",
+        "unnecessary detail"
+      ]
+    },
+    {
+      "id": "WMW-04",
+      "name": "The Empath",
+      "role": "human_connection",
+      "description": "Evaluates warmth, humanity, vulnerability, trust, and interpersonal impact.",
+      "pressure_points": [
+        "warmth",
+        "authenticity",
+        "emotional resonance",
+        "connection"
+      ],
+      "failure_modes": [
+        "coldness",
+        "performative vulnerability",
+        "emotional manipulation"
+      ]
+    },
+    {
+      "id": "WMW-05",
+      "name": "The Analytical Person",
+      "role": "logic_and_structure",
+      "description": "Looks for coherent reasoning, useful distinctions, structure, and contradictions.",
+      "pressure_points": [
+        "logic",
+        "precision",
+        "structure",
+        "causal reasoning"
+      ],
+      "failure_modes": [
+        "category errors",
+        "unsupported jumps",
+        "fuzzy definitions"
+      ]
+    },
+    {
+      "id": "WMW-06",
+      "name": "The Entertained One",
+      "role": "humor_and_engagement",
+      "description": "Notices humor, timing, storytelling, playfulness, and whether entertainment supports the message.",
+      "pressure_points": [
+        "humor",
+        "timing",
+        "story",
+        "memorability"
+      ],
+      "failure_modes": [
+        "forced jokes",
+        "distraction",
+        "humor without payoff"
+      ]
+    },
+    {
+      "id": "WMW-07",
+      "name": "The Resistant Person",
+      "role": "trust_and_resistance",
+      "description": "Does not automatically accept the speaker and tests persuasion and assumptions.",
+      "pressure_points": [
+        "credibility",
+        "trust",
+        "persuasion",
+        "assumption resistance"
+      ],
+      "failure_modes": [
+        "preaching",
+        "pressure",
+        "overclaiming"
+      ]
+    },
+    {
+      "id": "WMW-08",
+      "name": "The Value Seeker",
+      "role": "usefulness_and_outcome",
+      "description": "Wants a meaningful problem solved and evaluates whether the material produces practical value.",
+      "pressure_points": [
+        "usefulness",
+        "actionability",
+        "transformation",
+        "value"
+      ],
+      "failure_modes": [
+        "interesting-but-useless",
+        "no takeaway",
+        "unclear outcome"
+      ]
+    }
+  ],
+  "dimensions": [
+    "clarity",
+    "originality",
+    "usefulness",
+    "attention",
+    "authenticity",
+    "emotional_impact",
+    "memorability",
+    "curiosity",
+    "humor",
+    "self_indulgence",
+    "trust",
+    "distinctiveness"
+  ],
+  "rules": {
+    "independence": "Each panelist produces a separate reaction before synthesis.",
+    "no_consensus_pressure": "Disagreement is retained as data; no forced average replaces it.",
+    "evidence_grounding": "Claims about the material must cite available evidence records.",
+    "uncertainty": "Panelists may return insufficient_evidence when the input does not support a conclusion.",
+    "self_expression_vs_indulgence": "Talking about the speaker is not itself a defect; evaluate whether the audience receives value.",
+    "humor": "Humor is evaluated by all panelists through their own lens; WMW-06 has heightened sensitivity but is not the only humor evaluator.",
+    "modality_awareness": "Panelists may only evaluate modalities actually supplied.",
+    "no_mind_reading": "Psychological claims must be framed as interpretations, not observations.",
+    "business_boundary": "Panel reactions may generate hypotheses but do not establish market demand or willingness to pay."
+  },
+  "reaction_contract": {
+    "verdict": "string",
+    "strongest_point": "string",
+    "weakest_point": "string",
+    "reaction": "string",
+    "dimensions": "0-10 score for every required dimension",
+    "evidence_refs": "references to evidence records where available",
+    "uncertainty": "explicit unresolved questions or limitations",
+    "keep": "what should remain",
+    "change": "what should change"
+  }
+}

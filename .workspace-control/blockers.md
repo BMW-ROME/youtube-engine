@@ -1,3 +1,3 @@
 # Blockers
 
-None for publication: user authorization received, PR #12 open, and its code CI passed. Production stage-resume and upload idempotency are separate unfinished implementation tasks.
+No integration blocker remains. New voice changes require their own CI verification. Real-source transcript and independent synthetic panel evaluations are still needed for WP-005. No deployment or paid service is enabled.

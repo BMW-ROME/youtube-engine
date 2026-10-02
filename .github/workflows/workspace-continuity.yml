@@ -6,6 +6,8 @@ on:
       - ".workspace-control/**"
       - ".codex/skills/**"
       - "control_plane/**"
+      - "voice_engine/**"
+      - "tests/test_voice_engine.py"
       - "tests/test_workspace_continuity.py"
       - "tests/test_control_plane_state_machine.py"
       - "tests/test_recovery_contract.py"
