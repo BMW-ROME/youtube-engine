@@ -9,10 +9,10 @@
     "Work is decomposed into bounded packets with explicit verification",
     "Continuity machinery does not require bypassing provider limits"
   ],
-  "phase": "integration-ready",
+  "phase": "voice-engine-ready",
   "status": "active",
-  "active_workstream": "control-plane-resiliency",
-  "current_task": "Integrate verified PR #10/#11/#12 stack while preserving recovery fixes",
+  "active_workstream": "voice-engine-recovery",
+  "current_task": "Merge verified PR #13, then execute WP-005 real-source end-to-end exercise",
   "completed": [
     "Control Plane v0.1 vertical slice exists on control-plane-v0.1 / PR #10",
     "Workspace continuity architecture defined",
@@ -24,7 +24,10 @@
     "Dependency-free validator now checks required state keys, state path references, active work-packet existence, work-packet input paths, duplicate IDs, and missing next_on_success targets for complete packets",
     "Negative tests added for missing state references, missing work-packet inputs, and missing active packet IDs",
     "WP-003: reviewed stacked PRs, reproduced 17 failures, repaired recovery integrity and continuity contract drift",
-    "Authorized repair branch published; PR #12 opened against workspace-continuity-v0.1"
+    "Authorized repair branch published; PR #12 opened against workspace-continuity-v0.1",
+    "PR #12 merged into #11, #11 into #10, and #10 into main with recovery fixes intact",
+    "WP-004: recovered original Chapter 2.1-2.4 archives, repaired missing panel module and guarded distillation",
+    "Restored voice-engine changes published as PR #13"
   ],
   "verified": [
     "Fresh-worker context was limited to state.json, handoff.md, WP-001, and WP-001 named source/test files and still identified the correct next action",
@@ -37,18 +40,21 @@
     "46 tests passed locally including mocked YouTube adapter on 2026-10-01",
     "Workspace validator and git diff check passed after recovery repairs",
     "Reviewed branch ancestry is main -> control-plane-v0.1 -> workspace-continuity-v0.1",
-    "GitHub Actions run 36858002956 passed workspace validation and all 46 tests for PR #12 code head 24431bb23b33cd9ab8ae5f65ac50a46adb6d7028"
+    "GitHub Actions run 36858002956 passed workspace validation and all 46 tests for PR #12 code head 24431bb23b33cd9ab8ae5f65ac50a46adb6d7028",
+    "Integrated main 3e6fdc7430e776d6506256d2fd3dd946ea624d35 passed 46 tests locally",
+    "Integrated parent heads passed GitHub Actions 37019497592 and 37019624288",
+    "Restored voice-engine branch passed 61 repository tests using synthetic fixtures",
+    "PR #13 code head 58699f51e049a118cc661234f2f0066aeb68c818 passed GitHub Actions 37020784027"
   ],
   "in_progress": [],
   "blocked": [],
   "next_actions": [
-    "Integrate PR #12 repairs into PR #11 and PR #10 stack before deployment",
-    "Recover voice-project Chapter 2.1-2.3 interfaces and panel identities, then implement Chapter 2.4 Distillation Engine"
+    "Merge verified voice-engine PR #13",
+    "WP-005: run one existing private voice exercise through evidence, eight independent synthetic reactions, and distillation"
   ],
   "dependencies": [
-    "PR #10 Control Plane v0.1 branch",
-    "PR #11 Goal Continuity Stack v0.1",
-    "PR #12 recovery integrity repairs"
+    "Original Chapter 2.1-2.4 archives recovered",
+    "Private real-source transcript and independent panel evaluation for WP-005"
   ],
   "risks": [
     "PR #11 currently contains a test correction derived from PR #10; integration order must preserve that fix",
@@ -82,30 +88,43 @@
     "tests/test_workspace_continuity.py",
     ".workspace-control/work-packets/WP-003.yaml",
     "tests/test_run_manager_integrity.py",
-    "docs/reviews/2026-10-01-recovery-readiness.md"
+    "docs/reviews/2026-10-01-recovery-readiness.md",
+    ".workspace-control/work-packets/WP-004.yaml",
+    ".workspace-control/work-packets/WP-005.yaml",
+    ".workspace-control/workstreams/voice-engine-recovery.md",
+    "voice_engine/README.md",
+    "voice_engine/panel.py",
+    "voice_engine/distillation.py",
+    "tests/test_voice_engine.py"
   ],
   "relevant_files": [
-    "control_plane/core/run_manager.py",
-    "control_plane/schemas/checkpoint.schema.json",
-    "scripts/bootstrap_workspace_control.py",
-    "tests/test_run_manager_integrity.py",
-    "tests/test_workspace_continuity.py",
-    "tests/test_interruption_recovery.py",
-    ".github/workflows/workspace-continuity.yml",
-    "docs/reviews/2026-10-01-recovery-readiness.md"
+    "voice_engine/README.md",
+    "voice_engine/evidence.py",
+    "voice_engine/panel.py",
+    "voice_engine/panel_definition.json",
+    "voice_engine/distillation.py",
+    "voice_engine/master_asset_template.json",
+    "tests/test_voice_engine.py",
+    ".workspace-control/work-packets/WP-005.yaml"
   ],
   "relevant_commits": [
     "5ccefba0929dcabb635291738debff3fd2f245d5",
     "31a94aca01dea4b210b1831517d49fdd1310882e",
     "6dfb5d9",
-    "24431bb23b33cd9ab8ae5f65ac50a46adb6d7028"
+    "24431bb23b33cd9ab8ae5f65ac50a46adb6d7028",
+    "f8cd72219a447c4c19efc6899522c526f90e13d3",
+    "e39818f1d359335a162ba105974a4c1d0e633d52",
+    "3e6fdc7430e776d6506256d2fd3dd946ea624d35",
+    "58699f51e049a118cc661234f2f0066aeb68c818"
   ],
   "tests": [
     "GitHub Actions run 36514342274: workspace-control validation passed; 12 tests passed",
     "GitHub Actions run 36516118090: workspace-control validation passed; 16 tests passed",
     "2026-10-01 local review gate: 46 tests passed, dependency-free validator passed, git diff check passed",
-    "GitHub Actions 36858002956: workspace validator passed; 46 tests passed"
+    "GitHub Actions 36858002956: workspace validator passed; 46 tests passed",
+    "2026-10-02: integrated main 46 tests; restored voice branch 61 tests; dependency-free workspace validation passed",
+    "PR #13: GitHub Actions 37020784027 passed workspace validation and voice/recovery test suite"
   ],
-  "last_known_good_state": "PR #12 code head 24431bb23b33cd9ab8ae5f65ac50a46adb6d7028 passed workspace validation and 46 tests in GitHub Actions 36858002956. Publication is complete; all three stacked PRs remain unmerged.",
-  "updated_at": "2026-10-01T11:53:04.254572+00:00"
+  "last_known_good_state": "Recovery stack integrated into main at 3e6fdc7 and verified. PR #13 restores original voice contracts; 61 repository tests pass locally and GitHub Actions 37020784027 succeeded at code head 58699f5. No actual private voice exercise or deployment was performed.",
+  "updated_at": "2026-10-02T14:35:21.416948+00:00"
 }

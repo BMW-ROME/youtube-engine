@@ -1,0 +1,27 @@
+id: WP-005
+goal: Test one actual voice exercise through the restored contracts
+workstream: voice-engine-recovery
+status: ready
+inputs:
+  - voice_engine/README.md
+  - voice_engine/master_asset_template.json
+  - voice_engine/evidence.py
+  - voice_engine/panel.py
+  - voice_engine/distillation.py
+  - tests/test_voice_engine.py
+dependencies:
+  - WP-004
+definition_of_done:
+  - Select one existing private master asset and retain its provenance
+  - Obtain a real transcript without claiming nonexistent vocal analysis
+  - Supply eight independently evaluated synthetic reactions with evidence references
+  - Preserve uncertainty and panel disagreement through distillation
+  - Produce one traceable content candidate and record only actual verification
+constraints:
+  - Keep recordings and transcripts private and out of the public repository
+  - Use no paid services without an explicitly approved budget
+  - Do not recreate panel identities or treat synthetic reactions as market evidence
+verification:
+  - Existing engineering suite remains green
+  - Real-source candidate and evidence references can be inspected
+next_on_success: none
