@@ -1,0 +1,17 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"control-plane/status.schema.json",
+  "type":"object","additionalProperties":false,
+  "required":["schema_version","run_id","lifecycle","stage","execution","last_checkpoint","resumable","attempt","updated_at"],
+  "properties":{
+    "schema_version":{"const":"1.0"},"run_id":{"type":"string"},
+    "lifecycle":{"enum":["CREATED","RUNNING","PAUSED","INTERRUPTED","SUCCEEDED","FAILED","CANCELLED","RECOVERY_REQUIRED"]},
+    "stage":{"type":["string","null"],"enum":[null,"script","voice","music","images","thumbnail","effects","assembly","seo","shorts","upload"]},
+    "execution":{"enum":["NOT_STARTED","RUNNING","COMPLETE","FAILED","INTERRUPTED","UNKNOWN"]},
+    "analysis":{"enum":["NOT_STARTED","PENDING","RUNNING","COMPLETE","FAILED","INTERRUPTED"]},
+    "last_checkpoint":{"type":["string","null"]},"resumable":{"type":"boolean"},
+    "attempt":{"type":"integer","minimum":1},"video_id":{"type":["integer","null"]},
+    "error_class":{"type":["string","null"]},"error_message":{"type":["string","null"]},
+    "updated_at":{"type":"string","format":"date-time"}
+  }
+}

@@ -1,0 +1,41 @@
+name: Workspace Continuity
+
+on:
+  pull_request:
+    paths:
+      - ".workspace-control/**"
+      - ".codex/skills/**"
+      - "control_plane/**"
+      - "tests/test_workspace_continuity.py"
+      - "tests/test_control_plane_state_machine.py"
+      - "tests/test_recovery_contract.py"
+      - "tests/test_interruption_recovery.py"
+      - "tests/test_run_manager_integrity.py"
+      - "tests/test_youtube_adapter.py"
+      - "core/pipeline.py"
+      - "config/**"
+      - "scripts/bootstrap_workspace_control.py"
+      - ".github/workflows/workspace-continuity.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  continuity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test runner
+        run: python -m pip install --disable-pip-version-check pytest jsonschema pydantic-settings
+      - name: Validate workspace control
+        run: python scripts/bootstrap_workspace_control.py
+      - name: Run continuity and recovery contracts
+        env:
+          OPENAI_API_KEY: review-test-only
+        run: |
+          python -m pytest -q tests
