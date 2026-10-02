@@ -13,10 +13,10 @@ Integrated main: 46 tests passed locally. Parent merge heads: GitHub Actions 370
 Checkpoint integrity, retryability, contained paths, completion reporting, continuity guards, and stack integration. Original voice artifacts recovered. Distillation now rejects orphaned references, filters unsupported candidates, enforces confidence thresholds, and retains tiers/conflicts/list disagreements.
 
 ## Current task
-Verify new voice-engine PR CI, then execute WP-005.
+Merge verified PR #13, then execute WP-005.
 
 ## First next action
-Verify restored voice-engine publication and CI, then select one existing private voice exercise for an actual transcript-based run.
+Merge verified PR #13, then select one existing private voice exercise for an actual transcript-based run.
 
 ## Relevant paths
 voice_engine/README.md; voice_engine/evidence.py; voice_engine/panel.py; voice_engine/panel_definition.json; voice_engine/distillation.py; voice_engine/master_asset_template.json; tests/test_voice_engine.py; .workspace-control/work-packets/WP-005.yaml.
@@ -31,3 +31,6 @@ Do not redesign panel identities, overwrite original archives, rebuild recovered
 
 ## Unknowns
 Real-source transcript readiness, audio-analysis availability, and local Windows skill discovery.
+
+## Remote verification
+PR #13 code head 58699f51e049a118cc661234f2f0066aeb68c818 passed GitHub Actions 37020784027. The voice changes remain unmerged; recovery PRs #10-#12 are already merged.
