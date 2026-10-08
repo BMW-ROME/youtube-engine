@@ -1,55 +1,36 @@
 # Continuation Capsule
 
 ## Goal
-Build a dependable YouTube engine and preserve the human's goal across interruptions, context ceilings, and worker handoffs.
+Turn original voice exercises into reusable, revenue-oriented content without losing provenance or personality. Preserve continuity across interruptions.
 
 ## Current state
-WP-001, WP-002, and WP-003 are complete. PR #10 is draft/unmerged; PR #11 is open/unmerged. PR #12 is open and mergeable on review/recovery-contract-hardening, based on PR #11 head 10ad98b596d13634ff48b02035e5c106f63ca4b6. None of the three PRs is merged.
+PR #12 merged into #11, #11 into #10, and #10 into main. Main merge: 3e6fdc7430e776d6506256d2fd3dd946ea624d35. Recovery fixes are intact. WP-004 restores original Chapter 2.1-2.4 contracts on voice/recovered-engine-validation. The omitted panel Python module is repaired; eight original IDs and definitions are preserved. Original archives remain unchanged.
 
 ## Verified evidence
-- PR #11 reviewed head: GitHub Actions 36516217562 succeeded.
-- Original continuity/recovery gate: 16 tests passed locally.
-- Seventeen new regressions failed against the original RunManager.
-- After repairs: 46 tests passed locally, including mocked YouTube adapter.
-- Dependency-free validator and git diff check passed.
-- Reviewed branch ancestry is main -> control-plane-v0.1 -> workspace-continuity-v0.1.
+Integrated main: 46 tests passed locally. Parent merge heads: GitHub Actions 37019497592 and 37019624288 succeeded. Voice branch: 61 repository tests passed locally. Original evidence (3) and distillation (5) tests pass against restored modules. One historical panel test contains a dict/object fixture error; current regression tests use validated Reaction objects.
 
 ## Completed
-Recovery now checks contained file paths, checkpoint identity and stage successor, artifact hashes, and the status pointer. Failed recovery remains retryable after evidence repair. Final upload checkpoints permit a null successor. Successful results record checkpointed stages. JSON writes are atomic; completed checkpoints cannot be overwritten or rewound. Continuity validation checks basic state types/statuses, duplicate YAML keys, and escaping symlinks. CI runs all tests under tests/.
+Checkpoint integrity, retryability, contained paths, completion reporting, continuity guards, and stack integration. Original voice artifacts recovered. Distillation now rejects orphaned references, filters unsupported candidates, enforces confidence thresholds, and retains tiers/conflicts/list disagreements.
 
 ## Current task
-Integrate the verified repair stack before deployment.
-
-## Constraints and boundaries
-- Preserve PR #11's interruption-test correction.
-- Legacy checkpoints missing artifact hashes require explicit reverification.
-- One writer per run; no multi-process locking or power-loss transaction guarantee.
-- recover() returns a next-stage hint. The production adapter still runs the full pipeline; stage-level production resume is not implemented.
-- Do not bypass provider limits or reload unrelated history.
-- Do not deploy the original intermediate recovery implementation.
-
-## Relevant paths
-- .workspace-control/work-packets/WP-003.yaml
-- docs/reviews/2026-10-01-recovery-readiness.md
-- control_plane/core/run_manager.py
-- control_plane/schemas/checkpoint.schema.json
-- scripts/bootstrap_workspace_control.py
-- tests/test_run_manager_integrity.py
-- tests/test_workspace_continuity.py
-- tests/test_interruption_recovery.py
-- .github/workflows/workspace-continuity.yml
+Merge verified PR #13, then execute WP-005.
 
 ## First next action
-Integrate PR #12 repairs into the PR #11/#10 stack while preserving the interruption correction.
+Merge verified PR #13, then select one existing private voice exercise for an actual transcript-based run.
 
-## Then
-Carry repair changes into the PR #10/#11 integration stack. Recover the actual voice-project Chapter 2.1-2.3 contracts and panel identities before implementing Chapter 2.4 Distillation Engine. Recovered V1 task-sheet checkmarks are not executable interfaces.
+## Relevant paths
+voice_engine/README.md; voice_engine/evidence.py; voice_engine/panel.py; voice_engine/panel_definition.json; voice_engine/distillation.py; voice_engine/master_asset_template.json; tests/test_voice_engine.py; .workspace-control/work-packets/WP-005.yaml.
+
+Continuity regression gate: tests/test_workspace_continuity.py and scripts/bootstrap_workspace_control.py.
+
+## Constraints
+No provider-limit bypass, paid calls, media publication, or deployment. Recordings/transcripts stay out of public GitHub. Synthetic panel reactions are not real audience proof. Code validates supplied reactions; it does not generate them or analyze audio. Distillation ranks supplied information, not raw speech. Scores are heuristics, not probabilities. RunManager remains single-writer; production stage-level resume and upload idempotency remain unfinished.
 
 ## Do not redo
-Do not repeat WP-001/WP-002, recreate panel identities, retranscribe inaccessible recordings, or call a mocked adapter test real production evidence.
+Do not redesign panel identities, overwrite original archives, rebuild recovered contracts from chat, or mark the real-source end-to-end exercise complete from synthetic tests.
 
 ## Unknowns
-Local Windows Codex skill discovery; unrecovered voice-contract artifact locations; production stage-resume integration and upload idempotency.
+Real-source transcript readiness, audio-analysis availability, and local Windows skill discovery.
 
-## Publication and remote verification
-User authorized publication on 2026-10-01. PR #12: https://github.com/BMW-ROME/youtube-engine/pull/12. Code head 24431bb23b33cd9ab8ae5f65ac50a46adb6d7028 passed workspace validation and 46 tests in GitHub Actions run 36858002956. No merge or deployment occurred.
+## Remote verification
+PR #13 code head 58699f51e049a118cc661234f2f0066aeb68c818 passed GitHub Actions 37020784027. The voice changes remain unmerged; recovery PRs #10-#12 are already merged.

@@ -1,0 +1,48 @@
+{
+  "schema_name": "helping_others_with_my_voice.master_asset",
+  "schema_version": "1.0",
+  "asset_id": "HAWMV-YYYYMMDD-NNNN",
+  "created_at": "ISO-8601 UTC",
+  "status": "raw|processing|analyzed|production_candidate|shipped|archived",
+  "source": {
+    "type": "text|transcript|audio|video",
+    "original_filename": null,
+    "transcript": null,
+    "audio_ref": null,
+    "video_ref": null,
+    "source_notes": null
+  },
+  "evidence": {
+    "text": [],
+    "audio": [],
+    "visual": [],
+    "cross_modal_conflicts": []
+  },
+  "panel": {
+    "version": "walk_with_me_v1",
+    "reactions": [],
+    "disagreement_map": [],
+    "aggregate_findings": []
+  },
+  "distillation": {
+    "strongest_ideas": [],
+    "weakest_sections": [],
+    "preserve": [],
+    "improve": [],
+    "reusable_topics": [],
+    "content_candidates": [],
+    "product_candidates": [],
+    "business_opportunities": []
+  },
+  "derivatives": [],
+  "provenance": {
+    "parent_asset_id": null,
+    "derived_from": [],
+    "notes": null
+  },
+  "versioning": {
+    "asset_version": 1,
+    "analysis_versions": [],
+    "change_log": []
+  }
+}
